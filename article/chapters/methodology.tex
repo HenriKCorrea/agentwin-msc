@@ -528,99 +528,97 @@ Table~\ref{tab:semantic-gaps} summarizes the main semantic gaps identified.
 \section{Evaluation Methodology}
 \label{sec:evaluation-methodology}
 
-The evaluation assesses whether AgenTwin's agent-mediated interoperability architecture
-    successfully enables cross-domain coordination between heterogeneous Digital Twin systems.
-This evaluation focuses on demonstrating functional feasibility and
-    measuring key characteristics of AgenTwin within
-    the constraints of a Master's thesis timeline.
+The evaluation assesses whether AgenTwin achieves its design goal:
+    enabling agent-mediated semantic interoperability between heterogeneous Digital Twin systems
+    without requiring manually coded integration between platforms.
+Following the DSR evaluation principle of demonstrating artifact feasibility~\cite{peffers2007},
+    the scope is deliberately bounded to the fleet charging coordination use case.
 
-The evaluation is organized into three complementary dimensions that
-    collectively demonstrate the viability of agent-mediated semantic interoperability:
-    semantic capability,
-    functional correctness and
-    performance characteristics.
+The evaluation is structured as three layered dimensions that build on one another.
+Semantic mapping evaluation establishes, at the component level, that agents correctly
+    bridge each identified semantic gap before any end-to-end claim is made.
+Functional evaluation then verifies, end-to-end, that the artifact produces correct
+    outputs across both nominal and boundary operating conditions.
+Performance evaluation characterises the operational cost of the integration mechanism,
+    informing whether the approach is practical for deployment.
 
 \subsection{Semantic Mapping Evaluation}
 \label{subsec:semantic-mapping-evaluation}
 
-Semantic mapping evaluation assesses the quality of
-    agent-negotiated correspondences between heterogeneous ontologies:
+Semantic mapping evaluation assesses whether agents correctly bridge each semantic gap
+    identified in Table~\ref{tab:semantic-gaps}.
+To ensure test/production parity, the agent is designed to always emit a
+    structured mapping declaration as part of its response.
+This artifact names the entities correlated, the reasoning used,
+    and any coordinate or encoding transformations applied.
 
 \begin{itemize}
-    \item \textbf{Mapping Coverage:}
-    Measure the percentage of required concept mappings
-        (identified in Table~\ref{tab:semantic-gaps}) that
-        agents successfully establish during cross-domain coordination.
-    This quantifies the extent to which agents can autonomously bridge semantic gaps
-        without manual intervention.
+    \item \textbf{Mapping Coverage:} % Suggestion: use deepEval JSONCorrectnessMetric
+    Verify that the structured mapping declaration contains a valid entry for each
+        semantic gap in Table~\ref{tab:semantic-gaps}.
+    Evaluated via a JSON correctness metric that verifies whether the structured output
+        conforms to the expected schema: expected gaps must exist or the test fails.
 
-    \item \textbf{Mapping Correctness:}
-    Manual inspection of agent-negotiated mappings to verify semantic accuracy.
-    For critical mappings (e.g., \texttt{EVChargingStation} $\leftrightarrow$ \texttt{UsagePoint}),
-        validate that agents correctly identify relationships and
-        handle unit conversions (vehicle count vs. power metrics).
-
-    \item \textbf{Cross-Domain Query Accuracy:}
-    Execute a representative set of cross-domain queries with known expected outcomes.
-    Since no external ground truth exists for this novel integration,
-        correctness is validated through independent manual verification:
-        inspecting source data in both platforms and
-        confirming agent results match semantic relationships defined in Table~\ref{tab:semantic-gaps}.
-    This demonstrates whether agent-mediated integration produces semantically correct results.
+    \item \textbf{Mapping Correctness:} % Suggestion: use deepEval DAGMetric (BinaryJudgementNode per gap)
+    Verify that each entry in the mapping declaration is semantically accurate
+        against the specific challenge of its gap.
+    Evaluated via a deterministic decision tree that uses LLM-as-a-judge at each
+        branching point:
+    \begin{itemize}
+        \item \texttt{EVChargingStation} $\leftrightarrow$ \texttt{CustomerLoad}:
+            the agent must have correlated entities by geographic proximity.
+        \item \texttt{GeoLocation} $\leftrightarrow$
+            \texttt{Location}:
+            the agent must have correctly identified and resolved the structural
+            difference between WGS84 GeoJSON and OGC URN-declared
+            coordinate reference system.
+    \end{itemize}
 \end{itemize}
 
 \subsection{Functional Evaluation}
 \label{subsec:functional-evaluation}
 
-Functional evaluation verifies that the system successfully coordinates
-    cross-domain operations under various operational conditions:
+Functional evaluation verifies that the artifact produces correct outputs
+    across two operating points: a nominal scenario where transformer capacity is sufficient
+    to accommodate the full fleet, and a stress scenario where it is not.
+Together, these two cases confirm that the system satisfies hard constraints
+    regardless of whether demand fits within available headroom.
 
 \begin{itemize}
-    \item \textbf{Nominal Scenario:}
-    Execute the cross-domain use case described in Section~\ref{sec:use-case}.
-    Verify that all constraints are satisfied:
-        all EVs receive charging assignments,
-        transformers remain within safe capacity limits, and
-        assignments respect both Smart City availability and Energy Grid capacity constraints.
-    This demonstrates the system's ability to perform basic cross-domain coordination.
-    
-    \item \textbf{Stress Test:}
-    Increase demand beyond nominal capacity to test system behavior under resource contention.
-    Observe whether the system exhibits graceful degradation:
-        prioritizing assignments to prevent grid overloads while
-        clearly communicating when some EVs must be delayed or redirected.
-    This validates robustness under constrained resources.
-    
-    \item \textbf{Schema Evolution:}
-    Add a new property (\texttt{reservationSupport}) to the ChargingStation DTDL model.
-    Verify that agents adapt to the schema change without requiring code modifications,
-        demonstrating the architecture's resilience to ontology evolution.
-    This tests whether the system maintains zero-configuration integration when ontologies change.
+    \item \textbf{Nominal Scenario:} % Suggestion: use deepEval TaskComplitionMetric + programmatic assertions
+    Execute the cross-domain use case described in Section~\ref{sec:use-case}
+        with transformer headroom sufficient for all 50 buses.
+
+    \item \textbf{Oversubscription Scenario:} % Suggestion: use deepEval TaskComplitionMetric (strict_mode=True)
+    Reduce available transformer headroom so that it cannot accommodate the full fleet.
+    Verify that the system aborts the assignment and explains why it could not proceed
+        (e.g., which transformer zone would be exceeded).
 \end{itemize}
 
 \subsection{Performance Evaluation}
 \label{subsec:performance-evaluation}
 
-Performance evaluation characterizes the operational overhead of
-    agent-mediated coordination to assess practical feasibility:
+Performance evaluation therefore characterizes AgenTwin's operational overhead
+    against the constraints of the deployment context itself,
+    and presents the results as an open discussion of practical feasibility.
+The goal is to determine whether the approach imposes prohibitive costs
+    for realistic operational use,
+    with a manually-coded integration baseline identified as a direction for future work.
 
 \begin{itemize}
-    \item \textbf{Mapping Negotiation Time:}
-    Measure the time required for agents to establish initial semantic mappings
-        for the EV charging coordination scenario.
-    This characterizes the startup overhead of agent-mediated interoperability
-        compared to pre-configured integration approaches.
-    
-    \item \textbf{Query Response Time:}
-    Measure end-to-end latency for charging assignment requests,
-        from user submission to coordinated response.
-    Report mean, median, and 95th percentile latencies across multiple executions
-        to characterize typical and worst-case performance.
-    This determines whether response times are acceptable for interactive use.
-    
-    \item \textbf{Resource Utilization:}
-    Monitor CPU, memory, and network usage during peak load scenarios.
-    Document resource consumption patterns to inform deployment requirements and
-        assess feasibility for typical cloud or edge computing environments.
-    This validates that the approach does not impose prohibitive infrastructure demands.
+    \item \textbf{Task Completion Time:} % Suggestion: use LangFuse
+    Measure total time from operator submission to delivery of the complete assignment proposal,
+        including any clarification turns between the agent and the operator.
+    Report mean, median, and 95th percentile times across multiple executions.
+    Results are discussed against the operational constraint that the assignment must be
+        ready before the charging cycle begins to ensure fleet readiness by scheduled
+        departure time.
+
+    \item \textbf{LLM Resource Consumption:} % Suggestion: use LangFuse
+    Record the number of LLM inference calls and total tokens consumed
+        per assignment request.
+    These metrics constitute the dominant cost driver in agent-mediated systems
+        and determine whether the approach is deployable under realistic budget constraints.
+    Results are reported descriptively to inform infrastructure requirements
+        and support future cost comparisons as the research matures.
 \end{itemize}
