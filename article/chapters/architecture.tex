@@ -1,0 +1,202 @@
+\chapter{AgenTwin Architecture}
+\label{chap:architecture}
+
+This chapter presents the research design and system architecture of AgenTwin.
+The research design a Design Science Research (DSR) approach,
+    mapping each DSR activity to the corresponding thesis chapter.
+The system architecture then defines the layered Digital Ecosystem that
+    enables agent-mediated semantic interoperability between heterogeneous Digital Twin platforms.
+
+\section{Research Design}
+\label{sec:research-design}
+
+This research adopts the Design Science Research methodology proposed by
+    Peffers et al.~\cite{peffers2007}, which provides a
+    systematic framework for developing and evaluating Information Technology (IT) artifacts that
+    address identified organizational problems.
+DSR is particularly appropriate for this work because it
+    emphasizes the creation and evaluation of
+    purposeful artifacts---in this case,
+    AgenTwin's Digital Ecosystem architecture and its proof-of-concept implementation.
+
+The DSR process consists of six iterative activities:
+
+\begin{enumerate}
+    \item \textbf{Problem Identification and Motivation:}
+    Addressed in Chapters~\ref{chap:introduction} and~\ref{chap:related-work},
+        identifying the semantic interoperability challenge in heterogeneous DT systems.
+    
+    \item \textbf{Objectives of a Solution:}
+    Defined in Section~\ref{sec:objectives},
+        focusing on agent-mediated interoperability while preserving system autonomy.
+    
+    \item \textbf{Design and Development:}
+    Described in Section~\ref{sec:architecture-design} and Chapter~\ref{chap:implementation},
+        covering AgenTwin's Digital Ecosystem architecture and agent protocol integration.
+    
+    \item \textbf{Demonstration:}
+    Presented in Section~\ref{sec:use-case} of Chapter~\ref{chap:evaluation},
+        using a realistic cross-domain scenario involving Smart City and Energy Grid DTs.
+
+    \item \textbf{Evaluation:}
+    Detailed in Section~\ref{sec:evaluation-methodology} of Chapter~\ref{chap:evaluation}, assessing
+        semantic capability,
+        functional correctness and
+        performance characteristics.
+    
+    \item \textbf{Communication:}
+    Fulfilled through this thesis.
+\end{enumerate}
+
+\section{System Architecture Design}
+\label{sec:architecture-design}
+
+AgenTwin's Digital Ecosystem architecture
+    depicted in Figure~\ref{fig:architecture} adopts a
+    layered design inspired by
+    DestinE virtual cloud layer concept~\cite{Nativi_2021}, 
+    adapting its separation of concerns principles to agent-mediated Digital Twin interoperability.
+Moreover, this OSI-inspired layering~\cite{day1983} provides clear separation between
+    user interaction (Application),
+    protocol translation (Presentation),
+    conversation management (Session) and
+    resource access (Domain, Integration, Platform).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,keepaspectratio]{figures/architecture.pdf}
+    \caption{
+        AgenTwin architecture.
+        The layered design integrates group chat patterns with MCP-based resource discovery
+            to enable dynamic semantic negotiation between heterogeneous DT platforms.
+    }
+    \label{fig:architecture}
+\end{figure}
+
+\subsection{Application Layer}
+\label{subsec:application-layer}
+
+The application layer defines the end user that interacts with the Digital Ecosystem,
+    which can be a human operator or an automated service.
+A complex goal that requires assistance from multiple DT platforms is
+    elaborated by the end user, then submitted to the system via agent.
+Such goals may involve cross-domain queries, data aggregation, or coordinated actions
+    that exceed the capabilities of any single DT platform.
+Moreover, the application layer abstracts away platform-specific details,
+    allowing users to focus on high-level objectives without needing to understand
+    the underlying DT implementations.
+
+\subsection{Presentation Layer}
+\label{subsec:presentation-layer}
+
+The presentation layer translates user intents into structured requests
+    that can be processed by the Digital Ecosystem.
+Specifically, the layer shall provide an application, service or AI agent that
+    acts on behalf of the user
+    to communicate with the Digital Ecosystem's agent through the A2A protocol.
+This segregation allows the user application to remain agnostic of
+    the underlying agent communication mechanisms,
+    granting modularity and easier maintenance.
+Furthermore to this point, the presentation layer may be implemented either as
+    part of the Digital Ecosystem,
+    integrated into the user application itself or
+    provided as a third-party service,
+    depending on the specific use case and system requirements.
+
+\subsection{Session Layer}
+\label{subsec:session-layer}
+
+The session layer orchestrates multi-agent conversations that coordinate
+    cross-domain interactions between heterogeneous DT platforms and user agents.
+Unlike traditional orchestration approaches that rely on predetermined workflows,
+    this layer enables dynamic task solving where the exact interaction sequence
+    emerges from ongoing agent conversations rather than following pre-defined patterns.
+This design is particularly suited for complex scenarios involving semantic interoperability,
+    where the optimal coordination strategy cannot be determined a priori due to
+    heterogeneous ontologies and unpredictable cross-domain dependencies.
+
+The \textbf{Group Chat Manager} component realizes these principles through
+    AutoGen's group chat pattern~\cite{wu2024autogen}, adapted for Digital Twin interoperability.
+In this pattern, participating agents share the same conversation context and
+    interact dynamically without strict communication order,
+    enabling collaborative problem-solving that adapts to the specific characteristics
+    of each cross-domain request.
+
+The Group Chat Manager operates through three iterative steps.
+First, it \textbf{dynamically selects a speaker} from available domain agents
+    based on conversation context and role alignment.
+This selection uses role-play prompts that consider both the current state of
+    the cross-domain request and each agent's domain expertise,
+    ensuring that the most appropriate agent contributes at each conversation turn.
+Second, it \textbf{collects responses} from the selected agent,
+    which may include semantic mappings, data queries, or requests for clarification
+    from other domain agents.
+Third, it \textbf{broadcasts messages} to all participating agents,
+    maintaining shared context and enabling any agent to respond when their expertise is needed.
+
+Resources are exclusively accessed through domain layer agents,
+    which encapsulate platform-specific logic and knowledge.
+The Group Chat Manager never directly interacts with DT platforms or their data sources;
+    instead, it facilitates A2A protocol conversations among domain agents,
+    which themselves use the Model Context Protocol (MCP) to
+    query their respective platforms.
+This protocol layering ensures clean separation between
+    inter-agent coordination (A2A, session layer) and
+    platform resource access (MCP, domain/integration layers).
+
+Such design preserves platform autonomy,
+    as domain agents mediate all interactions without external entities
+    accessing their platforms' internals.
+Digital Environment capabilities are exposed only through agent interfaces,
+    enabling semantic mappings to be negotiated dynamically based on each request's context
+    rather than requiring pre-coordinated schemas.
+Aligned with DestinE's principles~\cite{Nativi_2021}, the session layer ensures that
+    each DT platform retains full autonomy over its internal operations while
+    participating in collaborative workflows mediated by agents.
+
+Although not in this research scope, the session layer may enforce governance policies.
+This includes ensuring that all interactions comply with
+    security, privacy, and operational constraints
+    defined by the Digital Environment administrators.
+Policy enforcement occurs at the Group Chat Manager boundary, enabling centralized control
+    while keeping domain agents focused on their platform-specific responsibilities.
+
+\subsection{Domain Layer}
+\label{subsec:domain-layer}
+
+The domain layer encapsulates platform-specific agents that
+    mediate interactions between the session layer and individual Digital Twin platforms.
+Each \textbf{Digital Twin Agent} act as a domain specialist for a specific DT platform,
+    understanding its native knowledge representation, ontology, and query capabilities.
+These agents serve as semantic translators,
+    exposing their platform's resources through the Model Context Protocol (MCP)
+    while negotiating cross-domain mappings through the Agent-to-Agent (A2A) protocol.
+To achieve semantic interoperability, besides being \textbf{domain-aware},
+    each Digital Twin Agent must be capable to reason about
+    semantic equivalences with other domains.
+By isolating platform heterogeneity within dedicated agents,
+    the domain layer enables seamless integration of diverse DT systems
+    without requiring direct interoperability between platforms themselves.
+
+\subsection{Integration Layer}
+\label{subsec:integration-layer}
+
+The integration layer provides the technical bridge between domain agents and Digital Twin platforms,
+    implemented through Model Context Protocol (MCP) servers.
+Each MCP server exposes a platform's capabilities through a standardized interface,
+    enabling agents to discover available resources and their schemas dynamically.
+This layer abstracts away platform-specific APIs and data access patterns,
+    allowing agents to interact with heterogeneous DT systems through a unified protocol.
+
+\subsection{Platform Layer}
+\label{subsec:platform-layer}
+
+The platform layer consists of individual Digital Twin systems
+    that manage domain-specific digital representations of physical assets.
+Each DT platform maintains its own internal data sources,
+    including physical sensors, simulation models, historical datasets,
+    and any other resources that contribute to its knowledge base.
+DT platforms retain full autonomy over their data management,
+    ensuring data integrity, security, and availability according to their own policies.
+Agents access platform resources exclusively through the integration layer's MCP servers,
+    preserving platform independence while enabling cross-domain coordination.

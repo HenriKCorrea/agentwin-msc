@@ -1,0 +1,261 @@
+\chapter{Evaluation}
+\label{chap:evaluation}
+
+This chapter defines the cross-domain use case used to demonstrate AgenTwin,
+    followed by the evaluation methodology that assesses the artifact's
+    semantic, functional, and performance characteristics.
+The use case provides the concrete operational scenario against which all evaluation
+    dimensions are measured, grounding the assessment in a realistic deployment context.
+
+\section{Cross-Domain Use Case Definition}
+\label{sec:use-case}
+
+To validate AgenTwin's agent-mediated interoperability approach,
+    a realistic cross-domain scenario has been designed that requires
+    cooperation between Smart City and Energy Grid DT systems.
+
+The use case addresses the central operational challenge of public transport depot charging:
+    assigning overnight charging stations to a mixed electric bus fleet
+    while respecting the depot's site-wide power limit imposed by
+    the distribution transformers serving the depot area.
+In public transport depot charging,
+    the overnight cycle is the operational backbone of electric bus service:
+    it determines daily fleet readiness and directly affects total operating cost.
+Vehicle duty cycles and the required daily energy are modelled per route and per bus type,
+    meaning that resolving vehicle models to their electrical specifications
+    is a prerequisite for any grid-safe assignment.
+Critically, the depot's maximum import capacity sets a site-wide power limit
+    that constrains how much power can be drawn simultaneously across all charging bays,
+    requiring that assignments respect transformer zone headroom
+    rather than treating all stations as interchangeable~\cite{elintacharge2026}.
+
+\textbf{User Persona:} % based on Hallcon job post for Coordinator, EV Charging Operations: https://talents.vaia.com/companies/hallcon/coordinator-ev-charging-operations-22312420
+An EV Operations Coordinator manages the day-to-day readiness of a transit vehicle fleet,
+    overseeing vehicle and driver activity, communicating operational changes,
+    and reporting deficiencies across the team.
+Each night, as buses return to depot, the coordinator must assign charging stations
+    to a mixed fleet whose individual power requirements vary by vehicle model.
+The coordinator opens AgenTwin and submits a natural-language request such as:
+    \textit{``I need to charge 25 Mercedes-Benz eCitaro and 25 Caetano e.City Gold buses overnight.''}
+
+\textbf{Cross-Domain Requirement:}
+This request exposes a known industry challenge in depot charging:
+    interoperability issues across vehicle OEMs,
+    charging interfaces, and backend systems~\cite{elintacharge2026}.
+In AgenTwin's architecture, this manifests as a split between two isolated platforms:
+
+\begin{itemize}
+    \item The Smart City DT knows charging station locations, slot availability,
+        operational status, and supported vehicle types,
+        but has no knowledge of transformer loads or grid capacity constraints
+    \item The Energy Grid DT monitors transformer loads and computes available headroom per zone,
+        but does not model charging station infrastructure, slot availability, or vehicle types
+\end{itemize}
+
+AgenTwin bridges these two platforms:
+    it resolves vehicle models to their charge rate requirements,
+    correlates charging station locations with grid topology zones,
+    and produces a complete assignment that satisfies both service availability
+    and the depot's maximum import capacity constraint.
+
+\textbf{Interaction Workflow:}
+\begin{enumerate}
+    \item \textbf{Operator submits request} via natural language through user interface,
+        identifying vehicle models and fleet size.
+    \item \textbf{Vehicle enrichment:} the Energy Grid agent resolves each model name against
+        \texttt{ElectricVehicle} entities in Ditto,
+        retrieving \texttt{chargeRateMax} per model without requiring
+        the operator to provide electrical specifications.
+    \item \textbf{Infrastructure query:} the Smart City agent queries \texttt{EVChargingStation}
+        entities in KTWIN, filtering by
+        \texttt{availableCapacity > 0},
+        \texttt{status = working}, and
+        \texttt{allowedVehicleType = bus}.
+    \item \textbf{Grid capacity query:} the Energy Grid agent aggregates
+        \texttt{CustomerLoad.p} values per transformer zone in Ditto,
+        computing available headroom as
+        $\texttt{headroom} = \texttt{ratedS} - \Sigma\texttt{CustomerLoad.p}$.
+    \item \textbf{Geographic--topological bridge:} the agents correlate each candidate station's
+        GeoJSON coordinates (\texttt{GeoLocation}) with the CIM \texttt{Location} position points
+        of transformer zones to determine which transformer serves each station.
+        This step constitutes the primary semantic gap: the two platforms
+        represent geographic position in structurally incompatible formats with no shared identifier.
+    \item \textbf{Assignment computation:} each bus is mapped to a station whose transformer zone
+        can absorb its \texttt{chargeRateMax} while maintaining at least 5\% safety headroom.
+        Bus models with higher power requirements are assigned to zones with greater available capacity.
+    \item \textbf{Assignment proposal presented} to the operator as a structured natural-language
+        response listing each bus and its assigned charging station.
+\end{enumerate}
+
+\textbf{Evaluation Scenario:}
+Both DT platforms are pre-populated with a known depot state:
+    transformer zones at representative overnight baseline loads and
+    charging stations reflecting realistic slot availability.
+The evaluation submits the bus fleet request and verifies that
+    AgenTwin produces a complete, constraint-satisfying assignment
+    without any manually coded mapping between the two platforms.
+
+\textbf{Success Criteria:}
+\begin{itemize}
+    \item All 50 buses receive a valid charging station assignment
+    \item No transformer zone exceeds 95\% of rated capacity after the full assignment
+    \item Only bus-capable stations (\texttt{allowedVehicleType = bus}) are assigned
+\end{itemize}
+
+\subsection{Semantic Gap Characterization}
+\label{subsec:semantic-gaps}
+
+The scenario requires bridging multiple semantic gaps between the
+    \texttt{smart-city} ontology (KTWIN) and the
+    \texttt{energy-grid} ontology (Ditto).
+These gaps are representative of real-world DT integration challenges:
+    different domains model the same physical infrastructure from different perspectives using
+    domain-specific ontologies optimized for their use cases.
+Table~\ref{tab:semantic-gaps} summarizes the main semantic gaps identified.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{ | m{4cm} | m{4cm} | m{5cm} | }
+        \hline
+
+        \textbf{Smart City Concept} & \textbf{Energy Grid Concept} & \textbf{Semantic Challenge} \\
+        \hline
+
+            \texttt{EVChargingStation}
+
+            (physical infrastructure asset)
+            
+            &
+            
+            \texttt{CustomerLoad}
+
+            (grid load entity)
+            
+            &
+            
+            Same physical installation, no shared identifier; agent must correlate by geographic proximity. \\
+        \hline
+            
+            \texttt{GeoLocation}
+            
+            (GeoJSON,
+            WGS84 implicit per RFC~7946)
+            
+            &
+            
+            \texttt{Location},
+            
+            \texttt{PositionPoints},
+            
+            \texttt{CoordinateSystem}
+
+            (CRS declared as OGC URN)
+            
+            &
+
+            Different coordinate reference systems with different structural encodings.\\
+        \hline
+
+    \end{tabular}
+    \caption{Semantic gaps requiring agent-mediated mapping}
+    \label{tab:semantic-gaps}
+\end{table}
+
+\section{Evaluation Methodology}
+\label{sec:evaluation-methodology}
+
+The evaluation assesses whether AgenTwin achieves its design goal:
+    enabling agent-mediated semantic interoperability between heterogeneous Digital Twin systems
+    without requiring manually coded integration between platforms.
+Following the DSR evaluation principle of demonstrating artifact feasibility~\cite{peffers2007},
+    the scope is deliberately bounded to the fleet charging coordination use case.
+
+The evaluation is structured as three layered dimensions that build on one another.
+Semantic mapping evaluation establishes, at the component level, that agents correctly
+    bridge each identified semantic gap before any end-to-end claim is made.
+Functional evaluation then verifies, end-to-end, that the artifact produces correct
+    outputs across both nominal and boundary operating conditions.
+Performance evaluation characterises the operational cost of the integration mechanism,
+    informing whether the approach is practical for deployment.
+
+\subsection{Semantic Mapping Evaluation}
+\label{subsec:semantic-mapping-evaluation}
+
+Semantic mapping evaluation assesses whether agents correctly bridge each semantic gap
+    identified in Table~\ref{tab:semantic-gaps}.
+To ensure test/production parity, the agent is designed to always emit a
+    structured mapping declaration as part of its response.
+This artifact names the entities correlated, the reasoning used,
+    and any coordinate or encoding transformations applied.
+
+\begin{itemize}
+    \item \textbf{Mapping Coverage:} % Suggestion: use deepEval JSONCorrectnessMetric
+    Verify that the structured mapping declaration contains a valid entry for each
+        semantic gap in Table~\ref{tab:semantic-gaps}.
+    Evaluated via a JSON correctness metric that verifies whether the structured output
+        conforms to the expected schema: expected gaps must exist or the test fails.
+
+    \item \textbf{Mapping Correctness:} % Suggestion: use deepEval DAGMetric (BinaryJudgementNode per gap)
+    Verify that each entry in the mapping declaration is semantically accurate
+        against the specific challenge of its gap.
+    Evaluated via a deterministic decision tree that uses LLM-as-a-judge at each
+        branching point:
+    \begin{itemize}
+        \item \texttt{EVChargingStation} $\leftrightarrow$ \texttt{CustomerLoad}:
+            the agent must have correlated entities by geographic proximity.
+        \item \texttt{GeoLocation} $\leftrightarrow$
+            \texttt{Location}:
+            the agent must have correctly identified and resolved the structural
+            difference between WGS84 GeoJSON and OGC URN-declared
+            coordinate reference system.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Functional Evaluation}
+\label{subsec:functional-evaluation}
+
+Functional evaluation verifies that the artifact produces correct outputs
+    across two operating points: a nominal scenario where transformer capacity is sufficient
+    to accommodate the full fleet, and a stress scenario where it is not.
+Together, these two cases confirm that the system satisfies hard constraints
+    regardless of whether demand fits within available headroom.
+
+\begin{itemize}
+    \item \textbf{Nominal Scenario:} % Suggestion: use deepEval TaskComplitionMetric + programmatic assertions
+    Execute the cross-domain use case described in Section~\ref{sec:use-case}
+        with transformer headroom sufficient for all 50 buses.
+
+    \item \textbf{Oversubscription Scenario:} % Suggestion: use deepEval TaskComplitionMetric (strict_mode=True)
+    Reduce available transformer headroom so that it cannot accommodate the full fleet.
+    Verify that the system aborts the assignment and explains why it could not proceed
+        (e.g., which transformer zone would be exceeded).
+\end{itemize}
+
+\subsection{Performance Evaluation}
+\label{subsec:performance-evaluation}
+
+Performance evaluation therefore characterizes AgenTwin's operational overhead
+    against the constraints of the deployment context itself,
+    and presents the results as an open discussion of practical feasibility.
+The goal is to determine whether the approach imposes prohibitive costs
+    for realistic operational use,
+    with a manually-coded integration baseline identified as a direction for future work.
+
+\begin{itemize}
+    \item \textbf{Task Completion Time:} % Suggestion: use LangFuse
+    Measure total time from operator submission to delivery of the complete assignment proposal,
+        including any clarification turns between the agent and the operator.
+    Report mean, median, and 95th percentile times across multiple executions.
+    Results are discussed against the operational constraint that the assignment must be
+        ready before the charging cycle begins to ensure fleet readiness by scheduled
+        departure time.
+
+    \item \textbf{LLM Resource Consumption:} % Suggestion: use LangFuse
+    Record the number of LLM inference calls and total tokens consumed
+        per assignment request.
+    These metrics constitute the dominant cost driver in agent-mediated systems
+        and determine whether the approach is deployable under realistic budget constraints.
+    Results are reported descriptively to inform infrastructure requirements
+        and support future cost comparisons as the research matures.
+\end{itemize}
