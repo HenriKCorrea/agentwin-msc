@@ -487,54 +487,37 @@ Table~\ref{tab:semantic-gaps} summarizes the main semantic gaps identified.
 
             \texttt{EVChargingStation}
 
-            (physical infrastructure asset) &
+            (physical infrastructure asset)
+            
+            &
+            
             \texttt{CustomerLoad}
 
-            (grid load entity) &
-            Same physical installation, entirely different conceptual framing:
-            service infrastructure vs.\ electrical load.
-            No shared identifier; agent must correlate by geographic proximity. \\
+            (grid load entity)
+            
+            &
+            
+            Same physical installation, no shared identifier; agent must correlate by geographic proximity. \\
         \hline
-
+            
             \texttt{GeoLocation}
+            
+            (GeoJSON,
+            WGS84 implicit per RFC~7946)
+            
+            &
+            
+            \texttt{Location},
+            
+            \texttt{PositionPoints},
+            
+            \texttt{CoordinateSystem}
 
-            (GeoJSON geometry: type + coordinates string) &
-            \texttt{Location} $\rightarrow$ \texttt{PositionPoints}
+            (CRS declared as OGC URN)
+            
+            &
 
-            (CIM Cartesian $x$/$y$ with \texttt{CoordinateSystem} reference) &
-            Structural mismatch in position representation.
-            Required to determine which transformer zone a station belongs to;
-            neither system references the other's spatial model. \\
-        \hline
-
-            \texttt{availableCapacity}
-
-            (integer: vehicle slot count) &
-            \texttt{CustomerLoad.p}
-
-            (float: active power in MW) &
-            Incommensurable units representing the same physical constraint
-            from different perspectives:
-            service availability vs.\ electrical load contribution. \\
-        \hline
-
-            \texttt{allowedVehicleType}
-
-            (bus, car, truck, \ldots) &
-            --- (no equivalent) &
-            Vehicle type compatibility is a Smart City concept only.
-            The Energy Grid has no notion of which vehicle types a
-            metering point serves; the agent must enforce this constraint
-            entirely from Smart City data. \\
-        \hline
-
-            \texttt{status} enum
-
-            (working, outOfService, \ldots) &
-            --- (derived, not stored) &
-            Operational availability has no direct Energy Grid counterpart.
-            Grid safety constraints must be derived from the headroom
-            calculation rather than read from a status field. \\
+            Different coordinate reference systems with different structural encodings.\\
         \hline
 
     \end{tabular}
