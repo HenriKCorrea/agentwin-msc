@@ -16,37 +16,52 @@ To validate AgenTwin's agent-mediated interoperability approach,
 
 The use case addresses the operational challenge of coordinating overnight EV fleet charging
     across facilities managed by two organizationally separate institutions:
-    the New York City Department of Citywide Administrative Services (DCAS), %should have citations to DCAS and ConEdison?
+    the New York City Department of Citywide Administrative Services (DCAS),
     which operates the city's fleet EV charging network across municipal garages in all five boroughs,
     and Consolidated Edison (ConEdison),
     the distribution utility responsible for the electrical grid serving those facilities.
 Depot charging is a centralized EV charging model in which fleet vehicles return to
     a common operating facility for scheduled energy replenishment during non-operational hours,
     enabling predictable vehicle availability and simplified infrastructure
-    management~\cite{monta2026depot}.
+    management.
 The challenge intensifies for mixed fleets because power requirements vary substantially
     by vehicle category: light-duty vehicles typically charge at 7--22~kW,
     while heavy-duty vehicles may require over 120~kW,
-    making uniform infrastructure planning insufficient~\cite{monta2026depot}.
-Critically, when the combined electrical demand of a fleet approaches a facility's
-    service capacity, grid upgrades -- transformer replacements, panel expansions,
-    or new utility service connections -- may be required to prevent overloading
-    the distribution infrastructure~\cite{monta2026depot}.
+    making uniform infrastructure planning insufficient.
+Moreover, when the combined electrical demand of a fleet approaches a facility's
+    service capacity, grid upgrades may be required to prevent overloading
+    the distribution infrastructure~\cite{monta2026}.
 In an operational context, this means that a safe overnight charging assignment
     cannot be derived from charging station data alone:
     it requires real-time knowledge of transformer headroom held exclusively
     by the serving utility.
 
 \textbf{User Persona:}
-% Fleet electrification???
-A Fleet Electrification Manager at DCAS oversees the deployment and operation of
-    the city's EV charging network,
-    coordinating overnight charging readiness across municipal garages in all five boroughs.
-Each night, as city fleet vehicles return to their assigned facilities,
-    the manager must verify that the planned charging load can be accommodated
-    by the local grid infrastructure without exceeding transformer capacity.
-The manager opens AgenTwin and submits a natural-language request such as:
-    \textit{``How many vehicles can we charge tonight across our active city garages without exceeding grid limits?''}
+A Fleet Coordinator at DCAS is responsible for ensuring that vehicles across several
+    city departments are road-ready at morning dispatch.
+Each night, as vehicles return to their respective agency facilities across the five boroughs,
+    the coordinator must confirm that the combined overnight charging load can be accommodated
+    by the local distribution grid at each facility without exceeding transformer capacity.
+DCAS operates charging infrastructure for a heterogeneous fleet spanning five agency categories,
+    each corresponding to a distinct \texttt{allowedVehicleType} in the NYC Fleet Station Network:
+    NYPD patrol and detective sedans (\texttt{car}:
+        Chevrolet Bolt EV at 7.2~kW, Hyundai Ioniq~5 at 10.9~kW);
+    FDNY Emergency Medical Services paramedic response units (\texttt{car}:
+        Hyundai Ioniq~5);
+    DSNY refuse collection trucks (\texttt{truck}:
+        Mack~LR Electric at up to 150~kW DC);
+    DOE electric school buses (\texttt{bus}:
+        Thomas Built Buses Jouley at up to 60~kW DC);
+    and a NYCEM mobile command vehicle (\texttt{caravan}:
+        Mercedes-Benz eSprinter EV at 22~kW)~\cite{dcas2026cftp}.
+Power requirements span more than an order of magnitude across these categories,
+    making uniform infrastructure planning insufficient.
+The coordinator opens AgenTwin and submits a natural-language request:
+    \textit{``I need to schedule tonight's depot charge.
+    Incoming vehicles: 8 Chevrolet Bolt EVs (NYPD), 4 Hyundai Ioniq~5s (FDNY EMS),
+    2 Thomas Built Jouley school buses (DOE), 1 eSprinter mobile command unit (NYCEM),
+    and 2 Mack~LR Electric collection trucks (DSNY).
+    Which stations can charge all of them without exceeding grid limits?''}
 
 \textbf{Cross-Domain Requirement:}
 This request crosses an organizational data sovereignty boundary:
