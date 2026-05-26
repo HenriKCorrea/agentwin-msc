@@ -14,92 +14,107 @@ To validate AgenTwin's agent-mediated interoperability approach,
     a realistic cross-domain scenario has been designed that requires
     cooperation between Smart City and Energy Grid DT systems.
 
-The use case addresses the central operational challenge of public transport depot charging:
-    assigning overnight charging stations to a mixed electric bus fleet
-    while respecting the depot's site-wide power limit imposed by
-    the distribution transformers serving the depot area.
-In public transport depot charging,
-    the overnight cycle is the operational backbone of electric bus service:
-    it determines daily fleet readiness and directly affects total operating cost.
-Vehicle duty cycles and the required daily energy are modelled per route and per bus type,
-    meaning that resolving vehicle models to their electrical specifications
-    is a prerequisite for any grid-safe assignment.
-Critically, the depot's maximum import capacity sets a site-wide power limit
-    that constrains how much power can be drawn simultaneously across all charging bays,
-    requiring that assignments respect transformer zone headroom
-    rather than treating all stations as interchangeable~\cite{elintacharge2026}.
+The use case addresses the operational challenge of coordinating overnight EV fleet charging
+    across facilities managed by two organizationally separate institutions:
+    the New York City Department of Citywide Administrative Services (DCAS), %should have citations to DCAS and ConEdison?
+    which operates the city's fleet EV charging network across municipal garages in all five boroughs,
+    and Consolidated Edison (ConEdison),
+    the distribution utility responsible for the electrical grid serving those facilities.
+Depot charging is a centralized EV charging model in which fleet vehicles return to
+    a common operating facility for scheduled energy replenishment during non-operational hours,
+    enabling predictable vehicle availability and simplified infrastructure
+    management~\cite{monta2026depot}.
+The challenge intensifies for mixed fleets because power requirements vary substantially
+    by vehicle category: light-duty vehicles typically charge at 7--22~kW,
+    while heavy-duty vehicles may require over 120~kW,
+    making uniform infrastructure planning insufficient~\cite{monta2026depot}.
+Critically, when the combined electrical demand of a fleet approaches a facility's
+    service capacity, grid upgrades -- transformer replacements, panel expansions,
+    or new utility service connections -- may be required to prevent overloading
+    the distribution infrastructure~\cite{monta2026depot}.
+In an operational context, this means that a safe overnight charging assignment
+    cannot be derived from charging station data alone:
+    it requires real-time knowledge of transformer headroom held exclusively
+    by the serving utility.
 
-\textbf{User Persona:} % based on Hallcon job post for Coordinator, EV Charging Operations: https://talents.vaia.com/companies/hallcon/coordinator-ev-charging-operations-22312420
-An EV Operations Coordinator manages the day-to-day readiness of a transit vehicle fleet,
-    overseeing vehicle and driver activity, communicating operational changes,
-    and reporting deficiencies across the team.
-Each night, as buses return to depot, the coordinator must assign charging stations
-    to a mixed fleet whose individual power requirements vary by vehicle model.
-The coordinator opens AgenTwin and submits a natural-language request such as:
-    \textit{``I need to charge 25 Mercedes-Benz eCitaro and 25 Caetano e.City Gold buses overnight.''}
+\textbf{User Persona:}
+% Fleet electrification???
+A Fleet Electrification Manager at DCAS oversees the deployment and operation of
+    the city's EV charging network,
+    coordinating overnight charging readiness across municipal garages in all five boroughs.
+Each night, as city fleet vehicles return to their assigned facilities,
+    the manager must verify that the planned charging load can be accommodated
+    by the local grid infrastructure without exceeding transformer capacity.
+The manager opens AgenTwin and submits a natural-language request such as:
+    \textit{``How many vehicles can we charge tonight across our active city garages without exceeding grid limits?''}
 
 \textbf{Cross-Domain Requirement:}
-This request exposes a known industry challenge in depot charging:
-    interoperability issues across vehicle OEMs,
-    charging interfaces, and backend systems~\cite{elintacharge2026}.
-In AgenTwin's architecture, this manifests as a split between two isolated platforms:
+This request crosses an organizational data sovereignty boundary:
+    DCAS and ConEdison are independent institutions operating separate Digital Twin systems
+    over the same physical infrastructure,
+    with no shared data model:
 
 \begin{itemize}
-    \item The Smart City DT knows charging station locations, slot availability,
-        operational status, and supported vehicle types,
-        but has no knowledge of transformer loads or grid capacity constraints
-    \item The Energy Grid DT monitors transformer loads and computes available headroom per zone,
-        but does not model charging station infrastructure, slot availability, or vehicle types
+% TODO: ensure plantuml reflects this
+    \item The \textbf{Smart City DT} (DCAS) knows charging station locations,
+        plug counts, operational status, and current slot availability,
+        but has no access to ConEdison's transformer loads or grid capacity data
+    \item The \textbf{Energy Grid DT} (ConEdison) monitors distribution transformer loads
+        and computes available headroom per substation zone,
+        but does not model DCAS charging station infrastructure or fleet vehicle assignments
 \end{itemize}
 
 AgenTwin bridges these two platforms:
-    it resolves vehicle models to their charge rate requirements,
-    correlates charging station locations with grid topology zones,
-    and produces a complete assignment that satisfies both service availability
-    and the depot's maximum import capacity constraint.
+    it correlates charging station locations with ConEdison substation service zones,
+    computes available capacity per transformer zone,
+    and produces a fleet-wide charging assignment that satisfies both
+    station availability and the grid's maximum import constraint.
 
 \textbf{Interaction Workflow:}
 \begin{enumerate}
+    % Seems too much highlight to chargeRateMax instead of vehicle types.
     \item \textbf{Operator submits request} via natural language through user interface,
         identifying vehicle models and fleet size.
-    \item \textbf{Vehicle enrichment:} the Energy Grid agent resolves each model name against
+    \item \textbf{Vehicle enrichment:} the Energy Grid agent resolves each vehicle model against
         \texttt{ElectricVehicle} entities in Ditto,
-        retrieving \texttt{chargeRateMax} per model without requiring
+        retrieving \texttt{chargeRateMax} per vehicle model without requiring
         the operator to provide electrical specifications.
     \item \textbf{Infrastructure query:} the Smart City agent queries \texttt{EVChargingStation}
         entities in KTWIN, filtering by
-        \texttt{availableCapacity > 0},
-        \texttt{status = working}, and
-        \texttt{allowedVehicleType = bus}.
+        \texttt{availableCapacity > 0} and
+        \texttt{status = working}.
     \item \textbf{Grid capacity query:} the Energy Grid agent aggregates
-        \texttt{CustomerLoad.p} values per transformer zone in Ditto,
+        \texttt{CustomerLoad.p} and \texttt{EquivalentLoad.p} values
+        per ConEdison substation zone in Ditto,
         computing available headroom as
-        $\texttt{headroom} = \texttt{ratedS} - \Sigma\texttt{CustomerLoad.p}$.
+        $\texttt{headroom} = \texttt{ratedS} - \Sigma(\texttt{CustomerLoad.p} + \texttt{EquivalentLoad.p})$.
     \item \textbf{Geographic--topological bridge:} the agents correlate each candidate station's
         GeoJSON coordinates (\texttt{GeoLocation}) with the CIM \texttt{Location} position points
-        of transformer zones to determine which transformer serves each station.
+        of ConEdison substation zones to determine which substation serves each station.
         This step constitutes the primary semantic gap: the two platforms
         represent geographic position in structurally incompatible formats with no shared identifier.
-    \item \textbf{Assignment computation:} each bus is mapped to a station whose transformer zone
+    \item \textbf{Assignment computation:} each vehicle is mapped to a station whose substation zone
         can absorb its \texttt{chargeRateMax} while maintaining at least 5\% safety headroom.
-        Bus models with higher power requirements are assigned to zones with greater available capacity.
+        Vehicles with higher power requirements are preferentially assigned to zones
+        with greater available capacity.
     \item \textbf{Assignment proposal presented} to the operator as a structured natural-language
-        response listing each bus and its assigned charging station.
+        response listing each vehicle and its assigned charging station.
 \end{enumerate}
 
 \textbf{Evaluation Scenario:}
-Both DT platforms are pre-populated with a known depot state:
-    transformer zones at representative overnight baseline loads and
-    charging stations reflecting realistic slot availability.
-The evaluation submits the bus fleet request and verifies that
+Both DT platforms are pre-populated with a known city state drawn from real-world sources:
+    ConEdison substation locations sou % missing reference to datasetsrced from OpenStreetMap
+    and DCAS fleet charging station locations from the NYC Open Data portal,
+    with transformer electrical parame ters synthesized from representative overnight baseline loads.
+The evaluation submits the fleet charging request and verifies that
     AgenTwin produces a complete, constraint-satisfying assignment
     without any manually coded mapping between the two platforms.
 
 \textbf{Success Criteria:}
 \begin{itemize}
-    \item All 50 buses receive a valid charging station assignment
-    \item No transformer zone exceeds 95\% of rated capacity after the full assignment
-    \item Only bus-capable stations (\texttt{allowedVehicleType = bus}) are assigned
+    \item All vehicles in the request receive a valid charging station assignment
+    \item No ConEdison transformer zone exceeds 95\% of rated capacity after the full assignment
+    \item Only stations with \texttt{status = working} and \texttt{availableCapacity > 0} are assigned
 \end{itemize}
 
 \subsection{Semantic Gap Characterization}
@@ -224,7 +239,7 @@ Together, these two cases confirm that the system satisfies hard constraints
 \begin{itemize}
     \item \textbf{Nominal Scenario:} % Suggestion: use deepEval TaskComplitionMetric + programmatic assertions
     Execute the cross-domain use case described in Section~\ref{sec:use-case}
-        with transformer headroom sufficient for all 50 buses.
+        with transformer headroom sufficient for the full vehicle fleet.
 
     \item \textbf{Oversubscription Scenario:} % Suggestion: use deepEval TaskComplitionMetric (strict_mode=True)
     Reduce available transformer headroom so that it cannot accommodate the full fleet.
