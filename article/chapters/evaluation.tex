@@ -70,7 +70,6 @@ This request crosses an organizational data sovereignty boundary:
     with no shared data model:
 
 \begin{itemize}
-% TODO: ensure plantuml reflects this
     \item The \textbf{Smart City DT} (DCAS) knows charging station locations,
         plug counts, operational status, and current slot availability,
         but has no access to ConEdison's transformer loads or grid capacity data
@@ -87,7 +86,6 @@ AgenTwin bridges these two platforms:
 
 \textbf{Interaction Workflow:}
 \begin{enumerate}
-    % Seems too much highlight to chargeRateMax instead of vehicle types.
     \item \textbf{Operator submits request} via natural language through user interface,
         identifying vehicle models and fleet size.
     \item \textbf{Vehicle enrichment:} the Energy Grid agent resolves each vehicle model against
@@ -118,9 +116,9 @@ AgenTwin bridges these two platforms:
 
 \textbf{Evaluation Scenario:}
 Both DT platforms are pre-populated with a known city state drawn from real-world sources:
-    ConEdison substation locations sou % missing reference to datasetsrced from OpenStreetMap
+    ConEdison substation locations sourced from OpenStreetMap,
     and DCAS fleet charging station locations from the NYC Open Data portal,
-    with transformer electrical parame ters synthesized from representative overnight baseline loads.
+    with transformer electrical parameters synthesized from representative overnight baseline loads.
 The evaluation submits the fleet charging request and verifies that
     AgenTwin produces a complete, constraint-satisfying assignment
     without any manually coded mapping between the two platforms.
@@ -135,13 +133,15 @@ The evaluation submits the fleet charging request and verifies that
 \subsection{Semantic Gap Characterization}
 \label{subsec:semantic-gaps}
 
-The scenario requires bridging multiple semantic gaps between the
+The scenario exposes three distinct semantic gaps between the
     \texttt{smart-city} ontology (KTWIN) and the
     \texttt{energy-grid} ontology (Ditto).
-These gaps are representative of real-world DT integration challenges:
-    different domains model the same physical infrastructure from different perspectives using
-    domain-specific ontologies optimized for their use cases.
-Table~\ref{tab:semantic-gaps} summarizes the main semantic gaps identified.
+These gaps span three categories of semantic heterogeneity:
+    \emph{conceptual} (same physical object modeled from incompatible domain perspectives),
+    \emph{structural} (same geographic concept encoded in incompatible data formats), and
+    \emph{vocabulary} (a concept present in neither ontology that the agent must resolve
+    from parametric world knowledge).
+Table~\ref{tab:semantic-gaps} summarizes the identified gaps.
 
 \begin{table}[H]
     \centering
@@ -164,7 +164,8 @@ Table~\ref{tab:semantic-gaps} summarizes the main semantic gaps identified.
             
             &
             
-            Same physical installation, no shared identifier; agent must correlate by geographic proximity. \\
+            Conceptual gap. Same physical installation, no shared identifier;
+            agent must correlate by geographic proximity. \\
         \hline
             
             \texttt{GeoLocation}
@@ -184,7 +185,35 @@ Table~\ref{tab:semantic-gaps} summarizes the main semantic gaps identified.
             
             &
 
-            Different coordinate reference systems with different structural encodings.\\
+            Structural gap. Different coordinate reference systems with different structural encodings.\\
+        \hline
+
+            \texttt{allowedVehicleType}
+
+            for \texttt{EVChargingStation}
+
+            (\texttt{car}, \texttt{bus}, \texttt{truck}$\ldots$)
+
+            &
+
+            \emph{(not modelled)}
+
+            &
+
+            \multirow{2}{=}{Vocabulary gap. 
+            Neither ontology models the vehicle type or model;
+            agent infers both from training knowledge.} \\
+        \cline{1-2}
+
+            \emph{(not modelled)}
+
+            &
+
+            \texttt{ElectricVehicle}
+
+            for headroom calculation (\texttt{chargeRateMax})
+
+            & \\
         \hline
 
     \end{tabular}
@@ -232,13 +261,27 @@ This artifact names the entities correlated, the reasoning used,
     Evaluated via a deterministic decision tree that uses LLM-as-a-judge at each
         branching point:
     \begin{itemize}
-        \item \texttt{EVChargingStation} $\leftrightarrow$ \texttt{CustomerLoad}:
-            the agent must have correlated entities by geographic proximity.
-        \item \texttt{GeoLocation} $\leftrightarrow$
-            \texttt{Location}:
+        \item \texttt{EVChargingStation} $\leftrightarrow$ \texttt{CustomerLoad}
+            (Conceptual):
+            the agent must have correlated entities by geographic proximity,
+            mapping the Smart City infrastructure asset to the Energy Grid load entity.
+        \item \texttt{GeoLocation} $\leftrightarrow$ \texttt{Location}
+            (Structural):
             the agent must have correctly identified and resolved the structural
-            difference between WGS84 GeoJSON and OGC URN-declared
+            difference between WGS84 GeoJSON and the OGC URN-declared
             coordinate reference system.
+        \item \texttt{allowedVehicleType} and \texttt{evName}
+            (Vocabulary): 
+            the agent must process the User prompt to address two independent problems:
+            \begin{itemize}
+                \item \emph{Type inference:} the agent must have inferred the
+                    \texttt{VehicleType} based on training knowledge
+                    to filter compatible \texttt{EVChargingStation}.
+                \item \emph{Model identification:} the agent must have matched
+                    the correct \texttt{ElectricVehicle}
+                    to retrieve \texttt{chargeRateMax} for the 
+                    headroom calculation.
+            \end{itemize}
     \end{itemize}
 \end{itemize}
 
