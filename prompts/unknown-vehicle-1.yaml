@@ -1,0 +1,107 @@
+model: gpt-4o
+
+# Scenario: Unknown Vehicle (Vocabulary Gap — Negative Case)
+# Platform state: same as nominal; transformer headroom sufficient for all known vehicles.
+# Fleet: same as nominal plus one vehicle whose model name cannot be mapped to a VehicleType.
+# Expected outcome:
+#   - All known vehicles assigned normally (assignments non-empty)
+#   - ElectraMax X7 appears in unresolvable_vehicles with reason "type_inference_failed"
+#   - ElectraMax X7 must NOT appear in assignments
+# Gap exercised: Vocabulary gap negative case — agent must not silently assign an
+#   unknown vehicle type to an arbitrary station.
+
+messages:
+  - role: system
+    content: |
+      You are AgenTwin, a fleet charging coordinator agent.
+
+      You have access to two data platforms:
+      - Smart City DT (DCAS): contains EVChargingStation records with location, status,
+        available capacity, and allowed vehicle types.
+      - Energy Grid DT (ConEdison): contains ElectricVehicle records, CustomerLoad and
+        EquivalentLoad records per substation zone, and PowerTransformer rated capacity.
+
+      Your task is to produce a complete overnight charging assignment for the submitted fleet.
+
+      When you have determined the full assignment, call submit_assignment exactly once.
+      Do not call it until you have resolved every vehicle in the request.
+      If you cannot determine the vehicle type for a model, do not guess.
+      Move the vehicle to unresolvable_vehicles with reason "type_inference_failed".
+
+  - role: user
+    content: |
+      I need to schedule tonight's depot charge.
+      Incoming vehicles:
+      8 Chevrolet Bolt EVs (NYPD),
+      4 Hyundai Ioniq 5s (FDNY EMS),
+      2 Thomas Built Jouley school buses (DOE),
+      1 eSprinter mobile command unit (NYCEM),
+      2 Mack LR Electric collection trucks (DSNY) and
+      1 ElectraMax X7 (NYCEM reserve unit).
+      Which stations can charge all of them without exceeding grid limits?
+
+tools:
+  - type: function
+    function:
+      name: submit_assignment
+      description: >
+        Formally commit the fleet charging assignment produced by multi-agent negotiation.
+        This tool terminates the session and delivers the structured result to the operator.
+        Call exactly once when all vehicles in the request have been resolved.
+      parameters:
+        type: object
+        required: [assignments, unresolvable_vehicles, oversubscription]
+        properties:
+
+          assignments:
+            type: array
+            description: >
+              Vehicles successfully assigned to a charging station.
+              Must not contain the ElectraMax X7 — it must appear in unresolvable_vehicles.
+            items:
+              type: object
+              required: [vehicle_id, station_id, zone_id]
+              properties:
+                vehicle_id:
+                  type: string
+                  description: ElectricVehicle entity ID from Energy Grid DT.
+                station_id:
+                  type: string
+                  description: EVChargingStation entity ID from Smart City DT.
+                zone_id:
+                  type: string
+                  description: Substation entity ID from Energy Grid DT that serves this station.
+
+          unresolvable_vehicles:
+            type: array
+            description: >
+              Vehicles that could not be assigned.
+              Expected non-empty: the ElectraMax X7 must appear here with
+              reason "type_inference_failed" because its vehicle type cannot be determined.
+            items:
+              type: object
+              required: [vehicle_id, reason]
+              properties:
+                vehicle_id:
+                  type: string
+                reason:
+                  type: string
+                  enum:
+                    - type_inference_failed
+                    - no_compatible_station
+                    - no_capacity
+
+          oversubscription:
+            description: >
+              Expected null in this scenario — headroom is sufficient for the known fleet.
+            oneOf:
+              - type: "null"
+              - type: object
+                required: [zone_id, demand_kw, headroom_kw]
+                properties:
+                  zone_id:
+                    type: string
+                  demand_kw:
+                    type: number
+                  headroom_kw:
+                    type: number

@@ -1,0 +1,104 @@
+model: gpt-4o
+
+# Scenario: Oversubscription
+# Platform state: transformer headroom reduced so it cannot accommodate the full fleet.
+# Expected outcome: oversubscription is non-null; affected vehicles appear in
+#   unresolvable_vehicles with reason "no_capacity"; remaining vehicles are assigned normally.
+# Gap exercised: Conceptual + Structural (same as nominal) + Functional boundary condition.
+
+messages:
+  - role: system
+    content: |
+      You are AgenTwin, a fleet charging coordinator agent.
+
+      You have access to two data platforms:
+      - Smart City DT (DCAS): contains EVChargingStation records with location, status,
+        available capacity, and allowed vehicle types.
+      - Energy Grid DT (ConEdison): contains ElectricVehicle records, CustomerLoad and
+        EquivalentLoad records per substation zone, and PowerTransformer rated capacity.
+
+      Your task is to produce a complete overnight charging assignment for the submitted fleet.
+
+      When you have determined the full assignment, call submit_assignment exactly once.
+      Do not call it until you have resolved every vehicle in the request.
+      If transformer headroom in a zone is insufficient, report the oversubscription
+      and move affected vehicles to unresolvable_vehicles.
+
+  - role: user
+    content: |
+      I need to schedule tonight's depot charge.
+      Incoming vehicles:
+      8 Chevrolet Bolt EVs (NYPD),
+      4 Hyundai Ioniq 5s (FDNY EMS),
+      2 Thomas Built Jouley school buses (DOE),
+      1 eSprinter mobile command unit (NYCEM) and
+      2 Mack LR Electric collection trucks (DSNY).
+      Which stations can charge all of them without exceeding grid limits?
+
+tools:
+  - type: function
+    function:
+      name: submit_assignment
+      description: >
+        Formally commit the fleet charging assignment produced by multi-agent negotiation.
+        This tool terminates the session and delivers the structured result to the operator.
+        Call exactly once when all vehicles in the request have been resolved.
+      parameters:
+        type: object
+        required: [assignments, unresolvable_vehicles, oversubscription]
+        properties:
+
+          assignments:
+            type: array
+            description: >
+              Vehicles successfully assigned to a charging station within available headroom.
+              May be a partial list if some zones are oversubscribed.
+            items:
+              type: object
+              required: [vehicle_id, station_id, zone_id]
+              properties:
+                vehicle_id:
+                  type: string
+                  description: ElectricVehicle entity ID from Energy Grid DT.
+                station_id:
+                  type: string
+                  description: EVChargingStation entity ID from Smart City DT.
+                zone_id:
+                  type: string
+                  description: Substation entity ID from Energy Grid DT that serves this station.
+
+          unresolvable_vehicles:
+            type: array
+            description: >
+              Vehicles that could not be assigned.
+              Expected non-empty in this scenario: high-draw vehicles in the oversubscribed
+              zone must appear here with reason "no_capacity".
+            items:
+              type: object
+              required: [vehicle_id, reason]
+              properties:
+                vehicle_id:
+                  type: string
+                reason:
+                  type: string
+                  enum:
+                    - type_inference_failed
+                    - no_compatible_station
+                    - no_capacity
+
+          oversubscription:
+            description: >
+              Expected non-null in this scenario.
+              Identifies the zone where available headroom is exceeded by the fleet demand,
+              and quantifies the shortfall.
+            oneOf:
+              - type: "null"
+              - type: object
+                required: [zone_id, demand_kw, headroom_kw]
+                properties:
+                  zone_id:
+                    type: string
+                  demand_kw:
+                    type: number
+                  headroom_kw:
+                    type: number

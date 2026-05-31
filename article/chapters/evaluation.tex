@@ -119,9 +119,11 @@ Both DT platforms are pre-populated with a known city state drawn from real-worl
     ConEdison substation locations sourced from OpenStreetMap,
     and DCAS fleet charging station locations from the NYC Open Data portal,
     with transformer electrical parameters synthesized from representative overnight baseline loads.
-The evaluation submits the fleet charging request and verifies that
-    AgenTwin produces a complete, constraint-satisfying assignment
-    without any manually coded mapping between the two platforms.
+AgenTwin is designed with no manually coded mapping between the two platforms:
+    all semantic bridging is performed by the domain agents at runtime
+    through MCP queries and A2A negotiation.
+    The evaluation verifies that this architectural property produces
+    a complete, constraint-satisfying assignment.
 
 \textbf{Success Criteria:}
 \begin{itemize}
@@ -234,75 +236,103 @@ The evaluation is structured as three layered dimensions that build on one anoth
 Semantic mapping evaluation establishes, at the component level, that agents correctly
     bridge each identified semantic gap before any end-to-end claim is made.
 Functional evaluation then verifies, end-to-end, that the artifact produces correct
-    outputs across both nominal and boundary operating conditions.
+    outputs across nominal and boundary operating conditions.
 Performance evaluation characterises the operational cost of the integration mechanism,
     informing whether the approach is practical for deployment.
+
+Following the DSR generalizability argument, the selected scenario is canonical:
+    it exercises all three categories of semantic heterogeneity identified as
+    constitutive of the problem class (conceptual, structural, vocabulary).
+    Any additional scenario would add instances of already-demonstrated categories
+    rather than exposing new gap types.
+    Evidence of resolution across all three categories in one scenario is therefore
+    sufficient for a feasibility claim under the DSR evaluation principle~\cite{peffers2007}.
 
 \subsection{Semantic Mapping Evaluation}
 \label{subsec:semantic-mapping-evaluation}
 
 Semantic mapping evaluation assesses whether agents correctly bridge each semantic gap
     identified in Table~\ref{tab:semantic-gaps}.
-To ensure test/production parity, the agent is designed to always emit a
-    structured mapping declaration as part of its response.
-This artifact names the entities correlated, the reasoning used,
-    and any coordinate or encoding transformations applied.
+Correctness is verified through programmatic assertions on A2A task completion artifacts
+    produced at the end of each test scenario.
+The artifact provides three neutral output fields: \texttt{vehicle\_id},
+    \texttt{station\_id}, and \texttt{zone\_id} that encode the result
+    without prescribing how it was produced.
+Each field serves as an independent evaluation oracle for its corresponding gap:
 
 \begin{itemize}
-    \item \textbf{Mapping Coverage:} % Suggestion: use deepEval JSONCorrectnessMetric
-    Verify that the structured mapping declaration contains a valid entry for each
-        semantic gap in Table~\ref{tab:semantic-gaps}.
-    Evaluated via a JSON correctness metric that verifies whether the structured output
-        conforms to the expected schema: expected gaps must exist or the test fails.
+    \item \textbf{Conceptual Gap}
+        (\texttt{EVChargingStation} $\leftrightarrow$ \texttt{CustomerLoad}):
+    For each assignment in the artifact, the test harness independently verifies
+        that the assigned \texttt{station\_id}'s WGS84 coordinates
+        fall within the geographic boundary of the reported \texttt{zone\_id}.
+    A zone attribution error---possible only if the agent failed to correlate
+        charging station locations with substation service areas---produces
+        a station-zone mismatch that fails this assertion.
 
-    \item \textbf{Mapping Correctness:} % Suggestion: use deepEval DAGMetric (BinaryJudgementNode per gap)
-    Verify that each entry in the mapping declaration is semantically accurate
-        against the specific challenge of its gap.
-    Evaluated via a deterministic decision tree that uses LLM-as-a-judge at each
-        branching point:
-    \begin{itemize}
-        \item \texttt{EVChargingStation} $\leftrightarrow$ \texttt{CustomerLoad}
-            (Conceptual):
-            the agent must have correlated entities by geographic proximity,
-            mapping the Smart City infrastructure asset to the Energy Grid load entity.
-        \item \texttt{GeoLocation} $\leftrightarrow$ \texttt{Location}
-            (Structural):
-            the agent must have correctly identified and resolved the structural
-            difference between WGS84 GeoJSON and the OGC URN-declared
-            coordinate reference system.
-        \item \texttt{allowedVehicleType} and \texttt{evName}
-            (Vocabulary): 
-            the agent must process the User prompt to address two independent problems:
-            \begin{itemize}
-                \item \emph{Type inference:} the agent must have inferred the
-                    \texttt{VehicleType} based on training knowledge
-                    to filter compatible \texttt{EVChargingStation}.
-                \item \emph{Model identification:} the agent must have matched
-                    the correct \texttt{ElectricVehicle}
-                    to retrieve \texttt{chargeRateMax} for the 
-                    headroom calculation.
-            \end{itemize}
-    \end{itemize}
+    \item \textbf{Structural Gap}
+        (\texttt{GeoLocation} $\leftrightarrow$ \texttt{Location}/\texttt{CoordinateSystem}):
+    The test harness independently applies the CRS transformation from the
+        \texttt{CoordinateSystem.crsUrn} declared in the Energy Grid DT
+        to the substation's \texttt{PositionPoints},
+        and verifies that the resulting WGS84 boundary is consistent with
+        the \texttt{zone\_id} reported in the artifact.
+    A CRS resolution error produces a geographic misclassification
+        detectable by comparing the independently-transformed coordinates
+        against zone boundaries.
+
+    \item \textbf{Vocabulary Gap}
+        (\texttt{allowedVehicleType} and \texttt{evName}):
+    The test harness maintains a ground-truth vehicle model-to-type table
+        as test infrastructure.
+    For each assignment, it verifies that the \texttt{station\_id}'s
+        \texttt{allowedVehicleType} includes the ground-truth type
+        for the assigned \texttt{vehicle\_id}'s model name.
+    A type inference error produces a vehicle-station type incompatibility
+        that fails this assertion.
 \end{itemize}
 
 \subsection{Functional Evaluation}
 \label{subsec:functional-evaluation}
 
 Functional evaluation verifies that the artifact produces correct outputs
-    across two operating points: a nominal scenario where transformer capacity is sufficient
-    to accommodate the full fleet, and a stress scenario where it is not.
-Together, these two cases confirm that the system satisfies hard constraints
-    regardless of whether demand fits within available headroom.
+    across three operating points, each targeting a distinct constraint dimension.
+Each scenario is submitted as an A2A task to AgenTwin,
+    repeated across multiple executions to account for LLM non-determinism.
 
 \begin{itemize}
-    \item \textbf{Nominal Scenario:} % Suggestion: use deepEval TaskComplitionMetric + programmatic assertions
+    \item \textbf{Nominal Scenario:}
     Execute the cross-domain use case described in Section~\ref{sec:use-case}
         with transformer headroom sufficient for the full vehicle fleet.
+    Verifies all three semantic gap assertions:
+        every \texttt{station\_id} must be geographically consistent with its \texttt{zone\_id},
+        CRS transformation must yield the correct zone attribution,
+        and each vehicle-station pair must satisfy \texttt{allowedVehicleType} compatibility.
+    Success requires all 17 vehicles assigned,
+        \texttt{unresolvable\_vehicles} empty, and \texttt{oversubscription} null.
 
-    \item \textbf{Oversubscription Scenario:} % Suggestion: use deepEval TaskComplitionMetric (strict_mode=True)
-    Reduce available transformer headroom so that it cannot accommodate the full fleet.
-    Verify that the system aborts the assignment and explains why it could not proceed
-        (e.g., which transformer zone would be exceeded).
+    \item \textbf{Oversubscription Scenario:}
+    Reduce available transformer headroom in the platform data so that it
+        cannot accommodate the full fleet,
+        keeping the operator request unchanged.
+    Verifies that the system identifies the capacity constraint through platform queries,
+        assigns vehicles in zones with sufficient headroom,
+        and moves vehicles in the oversubscribed zone to
+        \texttt{unresolvable\_vehicles} with \texttt{reason: no\_capacity}.
+    Success requires \texttt{oversubscription} non-null with the correct zone
+        and shortfall values, and no vehicle assigned to a zone exceeding
+        95\% of rated capacity.
+
+    \item \textbf{Unknown Vehicle Scenario:}
+    Extend the nominal fleet with one vehicle whose model name is absent
+        from both ontologies and the agent's training knowledge
+        (\textit{ElectraMax X7}),
+        with transformer headroom unchanged from the nominal scenario.
+    Verifies the vocabulary gap negative case:
+        the agent must not silently assign an unknown vehicle type to a station.
+    Success requires the unknown vehicle to appear in \texttt{unresolvable\_vehicles}
+        with \texttt{reason: type\_inference\_failed}
+        and to be absent from \texttt{assignments}.
 \end{itemize}
 
 \subsection{Performance Evaluation}
