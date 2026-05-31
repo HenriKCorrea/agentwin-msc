@@ -164,3 +164,34 @@ This architecture enables agents to dynamically discover platform capabilities t
     negotiate semantic mappings through A2A conversations, and
     execute coordinated queries to solve cross-domain problems---all
     without requiring modifications to the underlying DT platforms beyond MCP server deployment.
+
+\section{Task Completion Contract}
+\label{sec:task-completion-contract}
+
+Each A2A task submitted to the Digital Ecosystem includes a terminal tool schema.
+The schema is defined by the Client Agent (the caller) and describes the structured
+    output the ecosystem must produce to conclude the task.
+The Group Chat Manager receives the schema at task initialisation,
+    registers the terminal tool with AutoGen's execution registry,
+    and ends the group chat conversation when the tool is invoked by a domain agent.
+The tool arguments are captured verbatim and returned to the Client Agent
+    as the A2A task artifact.
+
+This design is use-case-agnostic: the Group Chat Manager contains no knowledge of
+    domain entities, or any specific output schema.
+Any deployment that needs a different output structure provides its own
+    terminal tool name and JSON Schema in the A2A task metadata,
+    and the ecosystem adapts without modification.
+
+The current proof-of-concept operates under a closed trust model:
+    the Group Chat Manager accepts the terminal tool schema from the Client Agent
+    without authenticating the caller or validating the schema against
+    an authorisation policy.
+Production deployments at A2A trust boundaries would require
+    mutual authentication and schema governance
+    before allowing an external caller to register executable tools.
+
+Future versions of the A2A protocol (v0.3 and later) are expected to introduce
+    a native \texttt{task/complete} primitive that would subsume the terminal tool mechanism,
+    making explicit task completion a first-class protocol operation
+    rather than a convention layered on top of function calling.
