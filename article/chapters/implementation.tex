@@ -33,20 +33,16 @@ The platform's extensibility allows implementation of custom Agent-to-Agent (A2A
 \label{sec:digital-ecosystem-orchestration}
 
 The Digital Ecosystem's agent communication is realized through
-    \textbf{AutoGen}~\cite{wu2024autogen},
-    an open-source AI agent framework focused on multi-agent conversation.
-Participating agents can
-    share conversation context and
+    \textbf{Microsoft Agent Framework}.
+The framework's Workflow layer provides the graph-based multi-agent orchestration
+    underpinning the Group Chat Manager component described in
+    Section~\ref{subsec:session-layer},
+    allowing participating agents to share conversation context and
     interact without predetermined communication sequences.
-This provides the foundation for implementing the
-    Group Chat Manager component described in Section~\ref{subsec:session-layer}.
 
-AutoGen's speaker selection mechanism can be configured with custom logic that
-    prioritizes agents based on conversation context analysis,
-    ensuring semantic negotiation progresses efficiently toward cross-domain resolution.
-The LLM backend flexibility enables evaluation across both
-    cloud-based models (E.g.: Claude Sonnet 3.5 via Anthropic API) and
-    locally-hosted alternatives (E.g.: Llama 3 via Ollama).
+Agent Framework's model-agnostic design enables evaluation across both
+    cloud-hosted backends (e.g.\ Claude Sonnet 3.5 via Anthropic API) and
+    locally-hosted alternatives (e.g.\ Llama\,3 via Ollama).
 This facilitates prototyping under realistic constraints while
     supporting performance comparison and cost-sensitive deployment scenarios.
 
@@ -167,13 +163,15 @@ This architecture enables agents to dynamically discover platform capabilities t
 
 \section{Task Completion Contract}
 \label{sec:task-completion-contract}
-
-Each A2A task submitted to the Digital Ecosystem includes a terminal tool schema.
+% TODO: create figure (mermaid) illustrating the task completion contract mechanism
+Each A2A task submitted to the Digital Ecosystem includes a terminal tool schema
+    encoded as an AgenTwin-defined key in the A2A message metadata,
+    which the protocol defines as a flexible key-value map for deployment-specific context.
 The schema is defined by the Client Agent (the caller) and describes the structured
     output the ecosystem must produce to conclude the task.
 The Group Chat Manager receives the schema at task initialisation,
-    registers the terminal tool with AutoGen's execution registry,
-    and ends the group chat conversation when the tool is invoked by a domain agent.
+    registers the terminal tool with Agent Framework's plugin registry, % TODO: Explain MAF plugin registry in the background chapter
+    and ends the workflow when the tool is invoked by a domain agent.
 The tool arguments are captured verbatim and returned to the Client Agent
     as the A2A task artifact.
 
@@ -191,7 +189,6 @@ Production deployments at A2A trust boundaries would require
     mutual authentication and schema governance
     before allowing an external caller to register executable tools.
 
-Future versions of the A2A protocol (v0.3 and later) are expected to introduce
-    a native \texttt{task/complete} primitive that would subsume the terminal tool mechanism,
-    making explicit task completion a first-class protocol operation
-    rather than a convention layered on top of function calling.
+This mechanism bridges Agent Framework's plugin registration model
+    (Section~\ref{subsec:ai-agent-frameworks}) with A2A's agent-driven task completion model
+    (Section~\ref{subsec:ai-agent-protocols}), without modifying either framework.
