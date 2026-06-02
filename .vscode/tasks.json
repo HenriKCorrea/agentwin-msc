@@ -6,6 +6,17 @@
 			"type": "shell",
 			"command": "base=\"${fileBasenameNoExtension}\"; drawio --crop -x -f pdf -o \"${fileDirname}/${base%.drawio}.pdf\" \"${file}\"",
 			"problemMatcher": []
+		},
+		{
+			"label": "Mermaid: Export to PDF (podman)",
+			"type": "shell",
+			"command": "podman run --userns keep-id --user ${UID} --rm -v \"${fileDirname}:/data:z\" ghcr.io/mermaid-js/mermaid-cli/mermaid-cli -i \"${fileBasename}\" -o \"${fileBasenameNoExtension}.pdf\" -f",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": []
 		}
 	]
 }
