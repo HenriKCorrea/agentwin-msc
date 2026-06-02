@@ -1,0 +1,15 @@
+stateDiagram-v2
+    direction TB
+    [*] --> Pending : Task Created
+    Pending --> Working : Start Execution
+    Pending --> Completed : Direct Complete
+    Working --> InputRequired : Input Needed
+    InputRequired --> Working : Input Received
+    Working --> Completed : Execution Complete
+    Working --> Failed : Execution Failed
+    InputRequired --> Failed : Input Timeout
+    Working --> Canceled : Canceled
+    InputRequired --> Canceled : Canceled
+    Completed --> [*]
+    Failed --> [*]
+    Canceled --> [*]

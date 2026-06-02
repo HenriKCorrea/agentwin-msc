@@ -259,6 +259,7 @@ These characteristics enable AI agents to function as
     facilitating interoperability without requiring extensive refactoring of existing infrastructures.
 
 \subsection{AI Agent Protocols}
+\label{subsec:ai-agent-protocols}
 
 Agent protocols define the communication patterns and interaction mechanisms that enable coordinated behavior in multi-agent systems.
 Several protocols have emerged as standards for agent-mediated communication.
@@ -299,9 +300,9 @@ This bidirectional capability exchange, combined with real-time notifications fo
 \textbf{Agent-to-Agent (A2A) Protocol}~\cite{Google_A2A_2025}
     is an open standard that enables seamless communication and collaboration between AI agents, providing a
     common language for agents built using diverse frameworks and by different vendors.
-Unlike approaches that wrap agents as tools (limiting their negotiation capabilities),
-    A2A allows agents to communicate in their native modalities,
-    preserving their autonomy while enabling complex multi-turn interactions such as negotiation and clarification.
+While MCP connects agents to tools and data,
+    A2A allows agents to collaborate as autonomous peers,
+    enabling complex multi-turn interactions such as negotiation and clarification.
 
 A2A follows a client-server architecture with three core actors:
     users (human operators or automated services),
@@ -311,18 +312,52 @@ The protocol emphasizes \emph{opaque execution}, where
     agents collaborate effectively without exposing their internal logic, memory, or proprietary tools,
     preserving intellectual property while enhancing security.
 
-The protocol defines several fundamental communication elements that enable sophisticated agent interactions:
+The protocol defines several fundamental communication elements that enable sophisticated agent interactions as depicted in Figure~\ref{fig:a2a-interaction-flow}:
 \begin{itemize}
     \item \textbf{Agent Cards}: JSON metadata documents describing an agent's identity, capabilities, endpoint, skills, and authentication requirements
-    \item \textbf{Tasks}: Stateful units of work with unique IDs and defined lifecycles, facilitating tracking of long-running operations
+    \item \textbf{Tasks}: Stateful units of work with unique IDs and defined lifecycles, managing long-running operations
     \item \textbf{Messages}: Single turns of communication containing content and roles, supporting multi-turn conversations
     \item \textbf{Artifacts}: Tangible outputs generated during task execution, providing structured and retrievable results
 \end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth,keepaspectratio]{figures/a2a-interaction-flow.pdf}
+    \caption{A2A protocol interaction flow~\cite{dwiyantoro2026}}
+    \label{fig:a2a-interaction-flow}
+\end{figure}
+
+Tasks progress through a state machine depicted in Figure~\ref{fig:a2a-task-lifecycle},
+     allowing to persist context across message exchanges.
+
+\begin{itemize}
+    \item \textbf{\texttt{Pending}}: the task has been created and is awaiting execution;
+    \item \textbf{\texttt{Working}}: the agent is actively processing the task and may emit intermediate progress updates;
+    \item \textbf{\texttt{InputRequired}}: execution is suspended because the agent requires additional input from the caller;
+    \item \textbf{\texttt{Completed}}, \textbf{\texttt{Failed}}, \textbf{\texttt{Canceled}}: terminal states signalling, respectively,
+        successful completion, an execution error, or deliberate cancellation.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth,keepaspectratio]{figures/a2a-task-lifecycle.pdf}
+    \caption{A2A task lifecycle~\cite{liu2025a}}
+    \label{fig:a2a-task-lifecycle}
+\end{figure}
+
+Task completion is always \emph{agent-driven}:
+    the A2A server transitions the task to its terminal state and
+    delivers structured results by attaching \texttt{Artifact} objects to the task.
+The \texttt{InputRequired} state allows an agent to request clarification or additional parameters before
+    acting on a remote system, without losing the conversational context built up in prior turns.
+Tasks also support hierarchical composition through \texttt{parent\_task\_id} and \texttt{child\_task\_ids} references,
+    allowing complex workflows to be decomposed into coordinated subtasks~\cite{liu2025a}.
 
 Both MCP and A2A protocols provide building blocks for the agent-mediated interoperability approach proposed in this research,
     addressing the semantic gaps that hinder current DT integration efforts.
 
 \subsection{AI Agent Frameworks}
+\label{subsec:ai-agent-frameworks}
 
 Several frameworks facilitate the development and deployment of AI agents, providing tools for agent orchestration, communication, and task execution.
 
@@ -340,6 +375,43 @@ LangChain's tool system allows LLMs to dynamically use external functions and ac
 While optimized for Gemini and the Google ecosystem, ADK is model-agnostic, deployment-agnostic, and
     built for compatibility with other frameworks.
 ADK provides tools for creating, deploying, and orchestrating AI agent architectures that range from simple tasks to complex workflows.
+
+\textbf{AutoGen}~\cite{wu2024autogen}
+    is an open-source multi-agent framework developed by Microsoft Research.
+Its current stable release organises functionality into three composable layers:
+    \emph{Core}, an event-driven runtime for scalable multi-agent systems;
+    \emph{AgentChat}, a high-level programming framework for single and multi-agent
+    applications built on Core; and
+    \emph{Extensions}, integrations with external services including MCP servers
+    (via \texttt{McpWorkbench}), distributed runtimes, and model-provider clients.
+
+\textbf{Semantic Kernel}~\cite{gupta2025a}
+    is a lightweight, open-source AI middleware developed by Microsoft that integrates
+    AI models into C\#, Python, or Java codebases.
+It provides enterprise-grade capabilities including session-based state management,
+    type safety, telemetry, and filters for responsible AI deployment at scale.
+Semantic Kernel's plugin system exposes existing code as LLM-callable functions through
+    typed interfaces aligned with OpenAPI specifications,
+    acting as the middleware layer that translates model requests into function calls
+    and returns results back to the model.
+
+\textbf{Microsoft Agent Framework}~\cite{higuchi2025}
+    is the direct successor to both AutoGen and Semantic Kernel, developed by the same
+    Microsoft teams.
+It combines AutoGen's simple agent abstractions with Semantic Kernel's enterprise
+    features—session-based state management, type safety, middleware, telemetry,
+    and extensive model and embedding support—and adds graph-based workflows
+    for explicit multi-agent orchestration.
+The framework provides two primary capability categories:
+\begin{itemize}
+    \item \textbf{Agents}: Individual LLM-backed agents that use tools and MCP servers,
+        supporting Microsoft Foundry, Azure OpenAI, OpenAI, Anthropic, and Ollama backends.
+    \item \textbf{Workflows}: Graph-based compositions of agents and functions with
+        type-safe routing, checkpointing, and human-in-the-loop support for
+        long-running tasks.
+\end{itemize}
+Native A2A protocol integration makes Agent Framework a natural choice for
+    implementing Digital Ecosystems where agents collaborate across domain boundaries.
 
 These frameworks, combined with specialized agent protocols, provide the
     technical foundation for implementing AgenTwin—enabling
