@@ -300,6 +300,21 @@ Functional evaluation verifies that the artifact produces correct outputs
 Each scenario is submitted as an A2A task to AgenTwin,
     repeated across multiple executions to account for LLM non-determinism.
 
+Following the behavioral testing principle of black-box evaluation~\cite{ribeiro2020},
+    success criteria are defined over observable output fields
+    rather than internal agent reasoning traces.
+Inspecting reasoning traces introduces a white-box paradox:
+    an agent could emit a correct answer through a spurious reasoning,
+    or produce a correct reasoning chain yet fail to complete the task.
+The scenarios are therefore designed as \emph{Minimum Functionality Tests} (MFTs):
+    each targets one specific capability of the system,
+    and is constructed so that a plausible wrong-mechanism strategy---the natural shortcut
+    an agent would take if it had not correctly bridged the gap---produces
+    a \emph{systematically different} observable output value.
+AgenTwin is an agentic multi-system pipeline rather than a single NLP model,
+    so the capability taxonomy from~\cite{ribeiro2020} does not transfer directly;
+    the black-box MFT principle is applied at the level of cross-domain semantic gap resolution.
+
 \begin{itemize}
     \item \textbf{Nominal Scenario:}
     Execute the cross-domain use case described in Section~\ref{sec:use-case}
