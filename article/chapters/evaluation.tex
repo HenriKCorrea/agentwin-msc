@@ -229,7 +229,7 @@ Table~\ref{tab:semantic-gaps} summarizes the identified gaps.
 The evaluation assesses whether AgenTwin achieves its design goal:
     enabling agent-mediated semantic interoperability between heterogeneous Digital Twin systems
     without requiring manually coded integration between platforms.
-Following the DSR evaluation principle of demonstrating artifact feasibility~\cite{peffers2007},
+Following the DSR evaluation principle of demonstrating artifact feasibility,
     the scope is deliberately bounded to the fleet charging coordination use case.
 
 The evaluation is structured as three layered dimensions that build on one another.
@@ -243,10 +243,8 @@ Performance evaluation characterises the operational cost of the integration mec
 Following the DSR generalizability argument, the selected scenario is canonical:
     it exercises all three categories of semantic heterogeneity identified as
     constitutive of the problem class (conceptual, structural, vocabulary).
-    Any additional scenario would add instances of already-demonstrated categories
+Any additional scenario would add instances of already-demonstrated categories
     rather than exposing new gap types.
-    Evidence of resolution across all three categories in one scenario is therefore
-    sufficient for a feasibility claim under the DSR evaluation principle~\cite{peffers2007}.
 
 \subsection{Semantic Mapping Evaluation}
 \label{subsec:semantic-mapping-evaluation}
@@ -297,8 +295,14 @@ Each field serves as an independent evaluation oracle for its corresponding gap:
 
 Functional evaluation verifies that the artifact produces correct outputs
     across several test scenarios, each targeting a distinct constraint dimension.
-Each scenario is submitted as an A2A task to AgenTwin,
-    repeated across multiple executions to account for LLM non-determinism.
+Each scenario is submitted as an A2A task to AgenTwin and evaluated once
+    in a controlled, reproducible environment.
+Significant failures in multi-agent pipelines arise from structural coupling between
+    agents, tools, and shared context rather than from isolated stochastic draws~\cite{wegener2026};
+    such failures are therefore consistent across executions and detectable in a single run.
+Consistent with the DSR evaluation goal of demonstrating feasibility,
+    a scenario passes if the observed artifact fields match the expected values;
+    a single counterexample is sufficient to refute a capability claim.
 
 Following the behavioral testing principle of black-box evaluation~\cite{ribeiro2020},
     success criteria are defined over observable output fields
@@ -390,8 +394,7 @@ Performance evaluation characterizes the operational overhead incurred by
 Because AgenTwin is a novel approach with no prior implementation to compare against,
     no external baseline and no numeric acceptance threshold can be derived from
     existing literature or practice at this stage of the research.
-Consistent with the DSR evaluation activity~\cite{peffers2007},
-    the goal is to produce empirical data that supports a qualitative feasibility judgement
+The goal is to produce empirical data that supports a qualitative feasibility judgement
     and establishes a reference point for subsequent projects.
 The results are reported in Section~\ref{sec:performance-results}
     and interpreted in the Discussion (Section~\ref{sec:discussion}).
