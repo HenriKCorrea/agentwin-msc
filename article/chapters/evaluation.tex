@@ -338,27 +338,26 @@ Each scenario is submitted as an A2A task to AgenTwin,
 \subsection{Performance Evaluation}
 \label{subsec:performance-evaluation}
 
-Performance evaluation therefore characterizes AgenTwin's operational overhead
-    against the constraints of the deployment context itself,
-    and presents the results as an open discussion of practical feasibility.
-The goal is to determine whether the approach imposes prohibitive costs
-    for realistic operational use,
-    with a manually-coded integration baseline identified as a direction for future work.
+Performance evaluation characterizes the operational overhead incurred by
+    the agent-mediated integration mechanism.
+Because AgenTwin is a novel approach with no prior implementation to compare against,
+    no external baseline and no numeric acceptance threshold can be derived from
+    existing literature or practice at this stage of the research.
+Consistent with the DSR evaluation activity~\cite{peffers2007},
+    the goal is to produce empirical data that supports a qualitative feasibility judgement
+    and establishes a reference point for subsequent projects.
+The results are reported in Section~\ref{sec:performance-results}
+    and interpreted in the Discussion (Section~\ref{sec:discussion}).
 
 \begin{itemize}
     \item \textbf{Task Completion Time:} % Suggestion: use LangFuse
     Measure total time from operator submission to delivery of the complete assignment proposal,
         including any clarification turns between the agent and the operator.
     Report mean, median, and 95th percentile times across multiple executions.
-    Results are discussed against the operational constraint that the assignment must be
-        ready before the charging cycle begins to ensure fleet readiness by scheduled
-        departure time.
 
     \item \textbf{LLM Resource Consumption:} % Suggestion: use LangFuse
     Record the number of LLM inference calls and total tokens consumed
         per assignment request.
     These metrics constitute the dominant cost driver in agent-mediated systems
-        and determine whether the approach is deployable under realistic budget constraints.
-    Results are reported descriptively to inform infrastructure requirements
-        and support future cost comparisons as the research matures.
+        and determine infrastructure requirements for realistic deployment.
 \end{itemize}
