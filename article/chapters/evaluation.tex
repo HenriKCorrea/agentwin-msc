@@ -296,7 +296,7 @@ Each field serves as an independent evaluation oracle for its corresponding gap:
 \label{subsec:functional-evaluation}
 
 Functional evaluation verifies that the artifact produces correct outputs
-    across three operating points, each targeting a distinct constraint dimension.
+    across several test scenarios, each targeting a distinct constraint dimension.
 Each scenario is submitted as an A2A task to AgenTwin,
     repeated across multiple executions to account for LLM non-determinism.
 
@@ -333,6 +333,38 @@ Each scenario is submitted as an A2A task to AgenTwin,
     Success requires the unknown vehicle to appear in \texttt{unresolvable\_vehicles}
         with \texttt{reason: type\_inference\_failed}
         and to be absent from \texttt{assignments}.
+
+    \item \textbf{Type-Incompatible Station Scenario:}
+    Configure the platform data so that all charging stations across the deployment
+        exclusively accept \texttt{allowedVehicleType: car},
+        then include one vehicle in the fleet whose model name resolves to
+        \texttt{truck} via the ground-truth type table.
+    Verifies that the agent enforces type compatibility for known vehicle types:
+        the agent must not silently assign the truck to a car-only station.
+    Success requires the truck vehicle to appear in \texttt{unresolvable\_vehicles}
+        with \texttt{reason: no\_compatible\_station}
+        and to be absent from \texttt{assignments}.
+
+    \item \textbf{Topological Attribution Scenario:}
+    Configure the test data with one charging station $C_1$
+        whose WGS84 coordinates place it geographically closer to substation $S_1$
+        than to substation $S_2$,
+        but whose corresponding \texttt{CustomerLoad} in the Energy Grid DT is
+        connected to $S_2$ via the CIM graph path
+        \texttt{CustomerLoad} $\to$ \texttt{Terminal} $\to$
+        \texttt{ConnectivityNode} $\to$ \texttt{Terminal} $\to$
+        \texttt{PowerTransformerEnd} $\to$ \texttt{Substation}.
+    Because power physically flows through $S_2$'s transformer,
+        capacity headroom must be debited from $S_2$, not $S_1$.
+    Verifies that the agent traverses the ontology graph to determine zone attribution
+        rather than using geographic proximity as a surrogate.
+    The test harness maintains a topological ground-truth table
+        derived by following the CIM graph path for each station.
+    Success requires the \texttt{zone\_id} reported for the $C_1$'s assignment
+        to match the CIM-derived zone ($S_2$'s service area),
+        not the geographically nearest zone ($S_1$'s service area);
+        a proximity-based attribution produces \texttt{zone\_id} $= S_1$,
+        which fails this assertion.
 \end{itemize}
 
 \subsection{Performance Evaluation}
