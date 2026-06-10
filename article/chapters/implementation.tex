@@ -129,6 +129,86 @@ Neither platform provides native MCP server capabilities.
 Implementing MCP servers for both KTWIN and Eclipse Ditto
     constitutes part of this research scope.
 
+\section{Ontology Preparation}
+\label{sec:ontology-preparation}
+
+Designing the cross-domain use case revealed an immediate representational problem:
+    the geographic correlation between Smart City charging station locations and
+    Energy Grid substation service zones cannot
+    be represented in the Energy Grid graph because the
+    \texttt{opendigitaltwins-energygrid} ontology~\cite{opendigitaltwins_energygrid_2021}
+    does not expose a \texttt{Location} relationship at the equipment level.
+Without this association, it's impossible to instantiate the structural semantic gap
+    described in Section~\ref{subsec:semantic-gaps}.
+
+The published ontology does provide limited geographic grounding:
+    \texttt{GeographicalRegion} and \texttt{SubGeographicalRegion} both extend \texttt{Location},
+    and three entities reference \texttt{SubGeographicalRegion}: 
+    \texttt{Substation}, \texttt{DCLine}, and \texttt{Line}.
+This structure is sufficient to correlate a substation with a smart city administrative district,
+    but it does not reach individual equipment:
+    load entities such as \texttt{CustomerLoad} and \texttt{EquivalentLoad} inherit from
+    \texttt{PowerSystemResource}, which carries no position,
+    so their geographic placement within a substation service zone cannot be represented.
+The \texttt{EVChargingStation}--to--\texttt{CustomerLoad} correlation therefore
+    requires position data at the equipment level,
+    which the published ontology does not expose.
+
+Figure~\ref{fig:preliminary-semantic-gap} illustrates this structural dead end:
+    the Smart City traversal path reaches \texttt{District} and \texttt{Neighbourhood}
+    via GeoSPARQL spatial containment, and these can be correlated with
+    \texttt{SubGeographicalRegion} and \texttt{Substation} on the Energy Grid side,
+    but that path stops at the substation level.
+The equipment hierarchy (\texttt{CustomerLoad}, \texttt{EquivalentLoad}) inherits from
+    \texttt{PowerSystemResource}, which carries no \texttt{Location} in the published ontology.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[height=0.85\textheight,keepaspectratio]{figures/preliminary-semantic-gap.pdf}
+    \caption{Cross-domain ontology model before the patch}
+    \label{fig:preliminary-semantic-gap}
+\end{figure}
+
+A systematic review of all CIM associations that reference \texttt{Location}
+    was conducted to determine whether any standard-conformant path could
+    bring geographic grounding to the load-level entities.
+The answer was found in \texttt{PowerSystemResource} itself.
+\texttt{PowerSystemResource.Location} is normatively defined in
+    IEC~61968-13:2008~\cite{IEC61968_13_2008},
+    the CIM RDF exchange format for distribution networks,
+    whose CDPSM profile uses the association throughout its RDF examples
+    for every equipment class and explicitly lists \texttt{Location} as a class used in CDPSM
+    but not in CPSM (the transmission-only profile~\cite{Uslar_2012}).
+The \texttt{opendigitaltwins-energygrid} repository~\cite{opendigitaltwins_energygrid_2021}
+    describes its models as adapted from
+    the CIM standards suite (via the CIM Users Group) and from the
+    \texttt{smart-data-models/dataModel.EnergyCIM} data models~\cite{smartdatamodels_energycim},
+    the latter of which already includes an explicit \texttt{Location} property in its
+    \texttt{PowerSystemResource} schema.
+Its omission from the DTDL ontology therefore reflects an incomplete adaptation,
+    which the repository README acknowledges by describing the published models as
+    a \textit{``first iteration''} and explicitly inviting contributors to
+    add missing entities before the next release.
+
+A patch was applied to a fork of the ontology
+    (\texttt{HenriKCorrea/opendigitaltwins-energygrid}~\cite{henrikcorrea_energygrid_fork}):
+    the \texttt{Location} relationship was restored to \texttt{PowerSystemResource},
+    making the Energy Grid graph traversable by geographic position.
+The restored \texttt{Location} is a structured CIM entity comprising
+    a sequence of \texttt{PositionPoints} together with a \texttt{CoordinateSystem} relationship
+    whose \texttt{crsUrn} property holds an OGC URN declaring the coordinate reference system.
+All other design decisions were retained verbatim as
+    authentic representations of the published ontology.
+
+One admissibility criterion governed this decision:
+    a modification is admissible only if it
+    (a)~restores a property normatively defined in the upstream standard,
+    (b)~is confirmed by at least one independent CIM implementation, and
+    (c)~increases rather than reduces the semantic complexity the agent must resolve at runtime.
+The \texttt{Location} patch satisfies all three conditions.
+The motivation was to make the research problem well-formed;
+    the effect was to introduce additional semantic complexity.
+
 \section{Agent-Platform Integration}
 \label{sec:agent-interaction-impl}
 

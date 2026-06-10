@@ -143,7 +143,22 @@ These gaps span three categories of semantic heterogeneity:
     \emph{structural} (same geographic concept encoded in incompatible data formats), and
     \emph{vocabulary} (a concept present in neither ontology that the agent must resolve
     from parametric world knowledge).
-Table~\ref{tab:semantic-gaps} summarizes the identified gaps.
+Figure~\ref{fig:patched-semantic-gap} illustrates the cross-domain ontology model
+    after the \texttt{PowerSystemResource.Location} patch described in
+    Section~\ref{sec:ontology-preparation},
+    annotating each entity by its role in the coordination decision,
+    and Table~\ref{tab:semantic-gaps} summarizes the three identified gaps.
+Entities marked \texttt{<<key>>} are directly read or compared during the assignment decision;
+    \texttt{<<bridge>>} entities mark cross-domain semantic gaps the agent must negotiate at runtime;
+    \texttt{<<context>>} entities provide structural topology for graph traversal;
+    \texttt{<<open-reference>>} marks a concept referenced by one ontology but defined in the other.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,keepaspectratio]{figures/patched-semantic-gap.pdf}
+    \caption{Cross-domain ontology model for the AgenTwin EV fleet charging use case.}
+    \label{fig:patched-semantic-gap}
+\end{figure}
 
 \begin{table}[H]
     \centering
