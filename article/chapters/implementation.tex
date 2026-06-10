@@ -60,7 +60,7 @@ KTWIN is a Kubernetes-based serverless framework designed to
     simplify DT adoption through cloud-native deployment patterns.
 It natively supports the Digital Twins Definition Language (DTDL) and has been
     validated for smart city applications using the
-    \texttt{opendigitaltwins-smartcities} ontology.
+    \texttt{opendigitaltwins-smartcities} ontology~\cite{russomAzureOpendigitaltwinssmartcities2021}.
 This ontology provides comprehensive models for
     urban infrastructure entities including
     parking facilities,
@@ -95,7 +95,7 @@ Ditto is a mature open-source IoT platform providing
     DT capabilities through its ``Thing'' abstraction,
     widely adopted in industrial IoT deployments.
 For this research, Ditto manages twins conforming to the
-    \texttt{opendigitaltwins-energygrid} ontology, which adapts the
+    \texttt{opendigitaltwins-energygrid} ontology~\cite{raviAzureOpendigitaltwinsenergygrid2021}, which adapts the
     Common Information Model (CIM) standard---the energy industry's reference ontology---to DTDL.
 Since Ditto's native knowledge representation uses the Thing model,
     schema translation will be necessary for this research.
@@ -136,7 +136,7 @@ Designing the cross-domain use case revealed an immediate representational probl
     the geographic correlation between Smart City charging station locations and
     Energy Grid substation service zones cannot
     be represented in the Energy Grid graph because the
-    \texttt{opendigitaltwins-energygrid} ontology~\cite{opendigitaltwins_energygrid_2021}
+    \texttt{opendigitaltwins-energygrid} ontology
     does not expose a \texttt{Location} relationship at the equipment level.
 Without this association, it's impossible to instantiate the structural semantic gap
     described in Section~\ref{subsec:semantic-gaps}.
@@ -174,15 +174,14 @@ A systematic review of all CIM associations that reference \texttt{Location}
     bring geographic grounding to the load-level entities.
 The answer was found in \texttt{PowerSystemResource} itself.
 \texttt{PowerSystemResource.Location} is normatively defined in
-    IEC~61968-13:2008~\cite{IEC61968_13_2008},
+    IEC~61968-13:2008~\cite{internationalelectrotechnicalcommissionApplicationIntegrationElectric2008},
     the CIM RDF exchange format for distribution networks,
     whose CDPSM profile uses the association throughout its RDF examples
     for every equipment class and explicitly lists \texttt{Location} as a class used in CDPSM
     but not in CPSM (the transmission-only profile~\cite{Uslar_2012}).
-The \texttt{opendigitaltwins-energygrid} repository~\cite{opendigitaltwins_energygrid_2021}
-    describes its models as adapted from
+The \texttt{opendigitaltwins-energygrid} repository describes its models as adapted from
     the CIM standards suite (via the CIM Users Group) and from the
-    \texttt{smart-data-models/dataModel.EnergyCIM} data models~\cite{smartdatamodels_energycim},
+    \texttt{smart-data-models/dataModel.EnergyCIM} data models~\cite{abellaSmartdatamodelsDataModelEnergyCIM2024},
     the latter of which already includes an explicit \texttt{Location} property in its
     \texttt{PowerSystemResource} schema.
 Its omission from the DTDL ontology therefore reflects an incomplete adaptation,
@@ -191,7 +190,7 @@ Its omission from the DTDL ontology therefore reflects an incomplete adaptation,
     add missing entities before the next release.
 
 A patch was applied to a fork of the ontology
-    (\texttt{HenriKCorrea/opendigitaltwins-energygrid}~\cite{henrikcorrea_energygrid_fork}):
+    (\texttt{HenriKCorrea/opendigitaltwins-energygrid}~\cite{correaHenriKCorreaOpendigitaltwinsenergygrid2026}):
     the \texttt{Location} relationship was restored to \texttt{PowerSystemResource},
     making the Energy Grid graph traversable by geographic position.
 The restored \texttt{Location} is a structured CIM entity comprising
