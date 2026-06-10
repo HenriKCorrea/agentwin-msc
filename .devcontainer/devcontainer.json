@@ -1,8 +1,10 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
-	"name": "Named Volume - Local Development",
-	"image": "henrikcorrea/latex-templates:latest",
+	"name": "LaTeX + PlantUML",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
@@ -11,11 +13,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "uname -a",
-
-	// Mount a named volume for local development. See https://code.visualstudio.com/remote/advancedcontainers/improve-performance#_use-a-named-volume-for-your-entire-source-tree
-	"workspaceMount": "source=${localWorkspaceFolderBasename}-workspace,target=/workspaces/${localWorkspaceFolderBasename},type=volume",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"postCreateCommand": "git lfs pull",
 
 	// Configure tool-specific properties.
 	"customizations": {
@@ -25,7 +23,8 @@
 				"hediet.vscode-drawio",
 				"PKief.material-icon-theme",
 				"GitHub.vscode-github-actions",
-				"GitHub.copilot-chat"
+				"GitHub.copilot-chat",
+				"jebbs.plantuml"
 			],
 			"settings": {
 				"workbench.colorTheme": "Default Dark Modern",
@@ -33,7 +32,9 @@
 				"workbench.editorAssociations": {
 				"*.pdf": "latex-workshop-pdf-hook"
 				},
-				"latex-workshop.view.pdf.viewer": "tab"
+				"latex-workshop.view.pdf.viewer": "tab",
+				"plantuml.render": "PlantUMLServer",
+				"plantuml.server": "http://plantuml-server:8080"
 			}
 		}
 	}

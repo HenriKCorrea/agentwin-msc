@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  app:
+    image: docker.io/henrikcorrea/latex-templates:latest
+    volumes:
+      # Update this to wherever you want VS Code to mount the folder of your project
+      - ../..:/workspaces:cached
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity 
+
+  plantuml-server:
+    image: docker.io/plantuml/plantuml-server@sha256:cd3d67a3150ab9dbe3c77c2abce6796c7cbfb46819fa4c74c987b44ff2c10003
+    volumes:
+      # Jetty's default URI/header buffer is 8192 bytes, which is too small for large
+      # PlantUML diagrams (encoded as a GET URL). The override.ini raises the limit to
+      # 64 KB. JAVA_OPTIONS/-D flags do not work for Jetty module properties; the only
+      # reliable way is dropping an ini file into start.d/. See jetty-override.ini.
+      - ./jetty-override.ini:/var/lib/jetty/start.d/override.ini
+    ports:
+      - 8080:8080
