@@ -286,7 +286,7 @@ Each field serves as an independent evaluation oracle for its corresponding gap:
     \item \textbf{Structural Gap}
         (\texttt{GeoLocation} $\leftrightarrow$ \texttt{Location}/\texttt{CoordinateSystem}):
     The test harness independently applies the CRS transformation from the
-        \texttt{CoordinateSystem.crsUrn} declared in the Energy Grid DT
+        \texttt{crsUrn} declared in the Energy Grid DT
         to the substation's \texttt{PositionPoints},
         and verifies that the resulting WGS84 boundary is consistent with
         the \texttt{zone\_id} reported in the artifact.
@@ -352,7 +352,7 @@ AgenTwin is an agentic multi-system pipeline rather than a single NLP model,
     Verifies that the system identifies the capacity constraint through platform queries,
         assigns vehicles in zones with sufficient headroom,
         and moves vehicles in the oversubscribed zone to
-        \texttt{unresolvable\_vehicles} with \texttt{reason: no\_capacity}.
+        \texttt{unresolvable\_vehicles} with reason: \texttt{no\_capacity}.
     Success requires \texttt{oversubscription} non-null with the correct zone
         and shortfall values, and no vehicle assigned to a zone exceeding
         95\% of rated capacity.
@@ -365,7 +365,7 @@ AgenTwin is an agentic multi-system pipeline rather than a single NLP model,
     Verifies the vocabulary gap negative case:
         the agent must not silently assign an unknown vehicle type to a station.
     Success requires the unknown vehicle to appear in \texttt{unresolvable\_vehicles}
-        with \texttt{reason: type\_inference\_failed}
+        with reason: \texttt{type\_inference\_failed}
         and to be absent from \texttt{assignments}.
 
     \item \textbf{Type-Incompatible Station Scenario:}
@@ -376,7 +376,7 @@ AgenTwin is an agentic multi-system pipeline rather than a single NLP model,
     Verifies that the agent enforces type compatibility for known vehicle types:
         the agent must not silently assign the truck to a car-only station.
     Success requires the truck vehicle to appear in \texttt{unresolvable\_vehicles}
-        with \texttt{reason: no\_compatible\_station}
+        with reason: \texttt{no\_compatible\_station}
         and to be absent from \texttt{assignments}.
 
     \item \textbf{Topological Attribution Scenario:}

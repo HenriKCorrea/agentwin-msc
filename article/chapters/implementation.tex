@@ -136,31 +136,34 @@ Designing the cross-domain use case revealed an immediate representational probl
     the geographic correlation between Smart City charging station locations and
     Energy Grid substation service zones cannot
     be represented in the Energy Grid graph because the
-    \texttt{opendigitaltwins-energygrid} ontology
-    does not expose a \texttt{Location} relationship at the equipment level.
+    ontology does not expose a \texttt{Location} relationship at the equipment level.
 Without this association, it's impossible to instantiate the structural semantic gap
     described in Section~\ref{subsec:semantic-gaps}.
 
-The published ontology does provide limited geographic grounding:
-    \texttt{GeographicalRegion} and \texttt{SubGeographicalRegion} both extend \texttt{Location},
-    and three entities reference \texttt{SubGeographicalRegion}: 
-    \texttt{Substation}, \texttt{DCLine}, and \texttt{Line}.
-This structure is sufficient to correlate a substation with a smart city administrative district,
-    but it does not reach individual equipment:
-    load entities such as \texttt{CustomerLoad} and \texttt{EquivalentLoad} inherit from
-    \texttt{PowerSystemResource}, which carries no position,
-    so their geographic placement within a substation service zone cannot be represented.
-The \texttt{EVChargingStation}--to--\texttt{CustomerLoad} correlation therefore
-    requires position data at the equipment level,
-    which the published ontology does not expose.
+The published ontology uses \texttt{SubGeographicalRegion} to
+    represent areas such as cities and districts.
+Within these regions, \texttt{Substation} describe a collection of equipments
+    like \texttt{PowerTransformer} through which electric energy in bulk is passed for the purposes of
+    switching or modifying its characteristics.
+An \texttt{EnergyConsumer} is a generic user of energy, which can be a 
+    \texttt{CustomerLoad} (a specific load entity) or an
+    \texttt{EquivalentLoad} (a virtual load representing aggregated consumption).
+Both transformers and loads are connected through \texttt{Terminal} entities,
+    which are in turn connected to \texttt{ConnectivityNode} entities that
+    represent physical connection points.
 
-Figure~\ref{fig:preliminary-semantic-gap} illustrates this structural dead end:
-    the Smart City traversal path reaches \texttt{District} and \texttt{Neighbourhood}
-    via GeoSPARQL spatial containment, and these can be correlated with
-    \texttt{SubGeographicalRegion} and \texttt{Substation} on the Energy Grid side,
-    but that path stops at the substation level.
-The equipment hierarchy (\texttt{CustomerLoad}, \texttt{EquivalentLoad}) inherits from
-    \texttt{PowerSystemResource}, which carries no \texttt{Location} in the published ontology.
+The Smart City graph models the urban environment through
+    \texttt{District}, and \texttt{Neighbourhood} entities,
+    which are linked by GeoSPARQL spatial containment relationships.
+The \texttt{EVChargingStation} entity represents an EV charging infrastructure asset
+    located within the Smart City graph.
+Besides its administrative area, a charging station spatial representation
+    is described by a \texttt{GeoLocation} entity.
+
+Figure~\ref{fig:preliminary-semantic-gap} illustrates this semantic challenge.
+Although a substation can be correlated with a neighbourhood through spatial containment,
+    it is not possible to correlate a charging station to its customer load counterpart because
+    the load-level entities have no geographic grounding.
 
 \begin{figure}[htbp]
     \centering
@@ -172,14 +175,14 @@ The equipment hierarchy (\texttt{CustomerLoad}, \texttt{EquivalentLoad}) inherit
 A systematic review of all CIM associations that reference \texttt{Location}
     was conducted to determine whether any standard-conformant path could
     bring geographic grounding to the load-level entities.
-The answer was found in \texttt{PowerSystemResource} itself.
-\texttt{PowerSystemResource.Location} is normatively defined in
+The answer was found in \texttt{PowerSystemResource}.
+Its location is normatively defined in
     IEC~61968-13:2008~\cite{internationalelectrotechnicalcommissionApplicationIntegrationElectric2008},
     the CIM RDF exchange format for distribution networks,
     whose CDPSM profile uses the association throughout its RDF examples
     for every equipment class and explicitly lists \texttt{Location} as a class used in CDPSM
     but not in CPSM (the transmission-only profile~\cite{Uslar_2012}).
-The \texttt{opendigitaltwins-energygrid} repository describes its models as adapted from
+The Energy Grid repository describes its models as adapted from
     the CIM standards suite (via the CIM Users Group) and from the
     \texttt{smart-data-models/dataModel.EnergyCIM} data models~\cite{abellaSmartdatamodelsDataModelEnergyCIM2024},
     the latter of which already includes an explicit \texttt{Location} property in its
@@ -189,8 +192,7 @@ Its omission from the DTDL ontology therefore reflects an incomplete adaptation,
     a \textit{``first iteration''} and explicitly inviting contributors to
     add missing entities before the next release.
 
-A patch was applied to a fork of the ontology
-    (\texttt{HenriKCorrea/opendigitaltwins-energygrid}~\cite{correaHenriKCorreaOpendigitaltwinsenergygrid2026}):
+A patch was applied to a fork of the ontology~\cite{correaHenriKCorreaOpendigitaltwinsenergygrid2026}:
     the \texttt{Location} relationship was restored to \texttt{PowerSystemResource},
     making the Energy Grid graph traversable by geographic position.
 The restored \texttt{Location} is a structured CIM entity comprising
