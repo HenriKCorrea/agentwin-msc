@@ -16,11 +16,10 @@ jobs:
 
       - name: Clone Overleaf Git repository
         env:
-          OVERLEAF_GIT_USER: ${{ secrets.OVERLEAF_GIT_USER }}
           OVERLEAF_GIT_TOKEN: ${{ secrets.OVERLEAF_GIT_TOKEN }}
           OVERLEAF_REPOSITORY_ID: ${{ secrets.OVERLEAF_REPOSITORY_ID }}
         run: |
-          git clone https://${OVERLEAF_GIT_USER}:${OVERLEAF_GIT_TOKEN}@git.overleaf.com/${OVERLEAF_REPOSITORY_ID} overleaf-repo
+          git clone https://git:${OVERLEAF_GIT_TOKEN}@git.overleaf.com/${OVERLEAF_REPOSITORY_ID} overleaf-repo
 
       - name: Update texmf subtree
         working-directory: overleaf-repo
@@ -48,7 +47,6 @@ jobs:
         if: steps.update-overleaf.outputs.changed == 'true'
         working-directory: overleaf-repo
         env:
-          OVERLEAF_GIT_USER: ${{ secrets.OVERLEAF_GIT_USER }}
           OVERLEAF_GIT_TOKEN: ${{ secrets.OVERLEAF_GIT_TOKEN }}
           OVERLEAF_REPOSITORY_ID: ${{ secrets.OVERLEAF_REPOSITORY_ID }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
@@ -57,7 +55,7 @@ jobs:
           git config user.name ${{ github.actor }}
           git config user.email ${{ github.actor }}@users.noreply.github.com
           git commit -m "$COMMIT_MESSAGE" || echo "No changes to commit"
-          git push https://${OVERLEAF_GIT_USER}:${OVERLEAF_GIT_TOKEN}@git.overleaf.com/${OVERLEAF_REPOSITORY_ID} HEAD:master
+          git push https://git:${OVERLEAF_GIT_TOKEN}@git.overleaf.com/${OVERLEAF_REPOSITORY_ID} HEAD:master
 
 # Wishlist for future improvements:
 # - Add a step to compile the LaTeX document and check for errors before syncing.
