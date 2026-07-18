@@ -30,7 +30,7 @@ jobs:
 
       - name: Copy article files to Overleaf repo
         run: |
-          rsync -av --include='.gitignore' --exclude='.*' article/ overleaf-repo/
+          rsync -av --exclude='.*' --include='.gitignore' article/ overleaf-repo/
 
       - name: Add changes to Overleaf repo
         id: update-overleaf
