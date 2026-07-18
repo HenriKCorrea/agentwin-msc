@@ -2,7 +2,6 @@
 
 [![Open in Dev Containers](https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/henrikcorrea/agentwin-msc)
 
-
 This repository contains the master's dissertation **"AgenTwin: An AI Agent Framework for Cooperative Digital Twin Interoperability"** conducted at the Institute of Informatics, Federal University of Rio Grande do Sul (UFRGS).
 
 > **Note:** This repository is a continuation of the former [research proposal](https://github.com/HenriKCorrea/pep) and has evolved into the full dissertation.
@@ -17,13 +16,13 @@ This dissertation investigates how AI Agent Protocols can enable semantic intero
 
 ## Overleaf Integration
 
-This project is synchronized with Overleaf for review. [Click here](https://www.overleaf.com/project/67eed6c5ea3465a8417292f3) to see it.  To compare local changes with the Overleaf version:
+This project is synchronized with Overleaf for review. [Click here](https://www.overleaf.com/project/6a54f3754ccccc3810c29203) to see it. To compare local changes with the Overleaf version:
 
 ### Setup Overleaf Remote
 
 ```bash
 # Add Overleaf as a remote repository
-git remote add overleaf https://git@git.overleaf.com/67eed6c5ea3465a8417292f3
+git remote add overleaf https://git@git.overleaf.com/6a54f3754ccccc3810c29203
 
 # Fetch the Overleaf repository
 git fetch overleaf --depth 1
@@ -52,5 +51,4 @@ This research is part of academic work at UFRGS. All code and documentation will
 
 ## References
 
-See `article.bib` for complete bibliography.
-
+See [article.bib](/article/article.bib) for complete bibliography.
