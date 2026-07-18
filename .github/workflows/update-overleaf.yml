@@ -28,9 +28,13 @@ jobs:
         run: |
           git subtree pull --prefix=texmf $TEXMF_REPO main
 
+      - name: Copy .gitignore to Overleaf repo
+        run: |
+          rsync -av .gitignore overleaf-repo/
+
       - name: Copy article files to Overleaf repo
         run: |
-          rsync -av --exclude='.*' --include='.gitignore' article/ overleaf-repo/
+          rsync -av --exclude='.*' article/ overleaf-repo/
 
       - name: Add changes to Overleaf repo
         id: update-overleaf
