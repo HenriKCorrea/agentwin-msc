@@ -55,7 +55,7 @@ jobs:
           git config user.name ${{ github.actor }}
           git config user.email ${{ github.actor }}@users.noreply.github.com
           git commit -m "$COMMIT_MESSAGE" || echo "No changes to commit"
-          git push https://git:${OVERLEAF_GIT_TOKEN}@git.overleaf.com/${OVERLEAF_REPOSITORY_ID} HEAD:master
+          git push https://git:${OVERLEAF_GIT_TOKEN}@git.overleaf.com/${OVERLEAF_REPOSITORY_ID} HEAD:main
 
 # Wishlist for future improvements:
 # - Add a step to compile the LaTeX document and check for errors before syncing.

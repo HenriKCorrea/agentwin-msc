@@ -31,12 +31,12 @@ git fetch overleaf --depth 1
 ### Compare with Overleaf
 
 ```bash
-# Diff local article directory against Overleaf master branch
+# Diff local article directory against Overleaf main branch
 # Excludes Overleaf-specific configuration files
-git diff main:article overleaf/master -- ':(exclude)texmf/' ':(exclude).gitignore' ':(exclude).latexmkrc'
+git diff main:article overleaf/main -- ':(exclude)texmf/' ':(exclude).gitignore' ':(exclude).latexmkrc'
 
 # Save diff to file for review
-git diff main:article overleaf/master -- ':(exclude)texmf/' ':(exclude).gitignore' ':(exclude).latexmkrc' > diff.txt
+git diff main:article overleaf/main -- ':(exclude)texmf/' ':(exclude).gitignore' ':(exclude).latexmkrc' > diff.txt
 ```
 
 ## Author
